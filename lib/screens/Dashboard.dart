@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:sales/screens/items_page.dart';
 import 'package:sales/screens/sales_page.dart';
+import 'package:sales/screens/stock_history.dart';
 
 
 class NextPage extends StatelessWidget {
@@ -57,6 +58,9 @@ class NextPage extends StatelessWidget {
                     icon: Icons.monetization_on_outlined,
                     title: 'Riwayat',
                     onTap: () {
+                      Navigator.push(context,
+                       MaterialPageRoute(builder: (context) => StockPage())
+                       );
                     },
                   ),
                 ],
