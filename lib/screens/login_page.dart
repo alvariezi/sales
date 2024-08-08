@@ -18,7 +18,6 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
-  bool _isConfirmPasswordVisible = false;
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   @override
@@ -246,18 +245,18 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
                 if (!_isLogin)
                   TextFormField(
                     controller: confirmPasswordController,
-                    obscureText: !_isConfirmPasswordVisible,
+                    obscureText: !_isPasswordVisible, // Linked visibility
                     decoration: InputDecoration(
                       border: const OutlineInputBorder(),
                       filled: true,
                       fillColor: Colors.white,
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                          _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
                         ),
                         onPressed: () {
                           setState(() {
-                            _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                            _isPasswordVisible = !_isPasswordVisible;
                           });
                         },
                       ),
