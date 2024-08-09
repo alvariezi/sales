@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:sales/components/delete_restock_produk.dart';
 import 'package:sales/screens/add_stock.dart';
+import 'package:sales/screens/stock_produk_page.dart';
 
 class StockPage extends StatefulWidget {
   const StockPage({super.key});
@@ -10,12 +13,9 @@ class StockPage extends StatefulWidget {
 
 class _StockPageState extends State<StockPage> {
   final List<Map<String, dynamic>> stockHistory = [
-    // List data
-    {'kode_barang': '001', 'nama_produk': 'kecap', 'qty_gudang': '50', 'qty_sales': '40', 'id': '1001', 'createdAt': '2023-12-01', 'updatedAt': '2023-12-05'},
-    {'kode_barang': '002', 'nama_produk': 'gula', 'qty_gudang': '70', 'qty_sales': '50', 'id': '1002', 'createdAt': '2023-12-10', 'updatedAt': '2023-12-15'},
-    {'kode_barang': '003', 'nama_produk': 'garam', 'qty_gudang': '90', 'qty_sales': '60', 'id': '1003', 'createdAt': '2023-12-20', 'updatedAt': '2023-12-25'},
-    {'kode_barang': '004', 'nama_produk': 'saos', 'qty_gudang': '60', 'qty_sales': '30', 'id': '1004', 'createdAt': '2023-12-22', 'updatedAt': '2023-12-26'},
-    {'kode_barang': '005', 'nama_produk': 'masako', 'qty_gudang': '80', 'qty_sales': '20', 'id': '1005', 'createdAt': '2023-12-24', 'updatedAt': '2023-12-28'},
+    {'kode_restok': 'RS001', 'jumlah_produk': '5', 'tanggal': '2023-12-05T14:30:00'},
+    {'kode_restok': 'RS002', 'jumlah_produk': '5', 'tanggal': '2023-12-15T08:15:00'},
+    {'kode_restok': 'RS003', 'jumlah_produk': '5', 'tanggal': '2023-12-25T18:45:00'},
   ];
 
   final TextEditingController searchController = TextEditingController();
@@ -36,7 +36,7 @@ class _StockPageState extends State<StockPage> {
   void searchStock() {
     setState(() {
       searchResults = stockHistory.where((stock) {
-        return stock['nama_produk']!.toLowerCase().contains(searchController.text.toLowerCase());
+        return stock['kode_restok']!.toLowerCase().contains(searchController.text.toLowerCase());
       }).toList();
     });
   }
@@ -48,11 +48,47 @@ class _StockPageState extends State<StockPage> {
     );
   }
 
+  String formatDateTime(String dateTimeString) {
+    DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
+    String formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
+    String timeZone = "WIB";
+    return '$formattedDate $timeZone';
+  }
+
+  void navigateToProductDetails(String kodeRestok, String jumlahProduk) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailsPage(
+          kodeRestok: kodeRestok,
+          jumlahProduk: jumlahProduk,
+        ),
+      ),
+    );
+  }
+
+  void showDeleteConfirmationDialog(String kodeRestok) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DeleteRestock(
+          kodeRestok: kodeRestok,
+          onConfirm: () {
+            setState(() {
+              stockHistory.removeWhere((stock) => stock['kode_restok'] == kodeRestok);
+              searchResults = stockHistory;
+            });
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Stock Management'),
+        title: const Text('Manajemen Stok'),
       ),
       body: SafeArea(
         child: Padding(
@@ -72,7 +108,7 @@ class _StockPageState extends State<StockPage> {
                             controller: searchController,
                             decoration: InputDecoration(
                               contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
-                              labelText: 'Cari Produk',
+                              labelText: 'Cari Kode Restock',
                               border: UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.blueGrey, width: 1.0),
                               ),
@@ -101,24 +137,33 @@ class _StockPageState extends State<StockPage> {
                             scrollDirection: Axis.horizontal,
                             child: DataTable(
                               columns: const [
-                                DataColumn(label: Text('Kode Produk')),
-                                DataColumn(label: Text('Nama Produk')),
-                                DataColumn(label: Text('Qty Gudang')),
-                                DataColumn(label: Text('Qty Sales')),
-                                DataColumn(label: Text('ID')),
-                                DataColumn(label: Text('Created At')),
-                                DataColumn(label: Text('Updated At')),
+                                DataColumn(label: Text('Kode Restock')),
+                                DataColumn(label: Text('Jumlah Produk')),
+                                DataColumn(label: Text('Tanggal & Waktu')),
+                                DataColumn(label: Text('Action')), 
                               ],
                               rows: searchResults.map((stock) {
                                 return DataRow(
                                   cells: [
-                                    DataCell(Text(stock['kode_barang'])),
-                                    DataCell(Text(stock['nama_produk'])),
-                                    DataCell(Text(stock['qty_gudang'])),
-                                    DataCell(Text(stock['qty_sales'])),
-                                    DataCell(Text(stock['id'])),
-                                    DataCell(Text(stock['createdAt'])),
-                                    DataCell(Text(stock['updatedAt'])),
+                                    DataCell(Text(stock['kode_restok'])),
+                                    DataCell(
+                                      Text('${stock['jumlah_produk']} item'),
+                                      onTap: () {
+                                        navigateToProductDetails(
+                                          stock['kode_restok'],
+                                          stock['jumlah_produk'],
+                                        );
+                                      },
+                                    ),
+                                    DataCell(Text(formatDateTime(stock['tanggal']))),
+                                    DataCell(
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () {
+                                          showDeleteConfirmationDialog(stock['kode_restok']);
+                                        },
+                                      ),
+                                    ),
                                   ],
                                 );
                               }).toList(),
