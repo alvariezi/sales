@@ -1,14 +1,12 @@
-
-// ignore_for_file: file_names
-
 import 'package:flutter/material.dart';
 import 'package:sales/screens/items_page.dart';
 import 'package:sales/screens/sales_page.dart';
 import 'package:sales/screens/stock_history.dart';
 
+class DashboardPage extends StatelessWidget {
+  final String token;
 
-class NextPage extends StatelessWidget {
-  const NextPage ({super.key});
+  const DashboardPage({super.key, required this.token});
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +19,14 @@ class NextPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Text(
+                'Token: $token',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 20), 
             Expanded(
               child: GridView.count(
                 crossAxisCount: 2,
@@ -32,7 +37,7 @@ class NextPage extends StatelessWidget {
                     icon: Icons.account_circle,
                     title: 'Sales',
                     onTap: () {
-                        Navigator.push(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const SalesPage()),
                       );
@@ -41,14 +46,13 @@ class NextPage extends StatelessWidget {
                   _buildDashboardCard(
                     icon: Icons.account_balance_wallet_outlined,
                     title: 'Transaksi',
-                    onTap: () {
-                    },
+                    onTap: () {},
                   ),
                   _buildDashboardCard(
                     icon: Icons.storefront_outlined,
                     title: 'Produk',
                     onTap: () {
-                       Navigator.push(
+                      Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const ItemsPage()),
                       );
@@ -58,9 +62,10 @@ class NextPage extends StatelessWidget {
                     icon: Icons.monetization_on_outlined,
                     title: 'Riwayat',
                     onTap: () {
-                      Navigator.push(context,
-                       MaterialPageRoute(builder: (context) => StockPage())
-                       );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => StockPage()),
+                      );
                     },
                   ),
                 ],
@@ -72,7 +77,11 @@ class NextPage extends StatelessWidget {
     );
   }
 
-  Widget _buildDashboardCard({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildDashboardCard({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Card(

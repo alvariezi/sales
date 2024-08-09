@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:sales/components/regist_popup.dart'; 
-import 'package:sales/screens/Dashboard.dart'; 
+import 'package:sales/screens/Dashboard.dart';
 
+import '../components/regist_popup.dart';
 class LoginRegisterPage extends StatefulWidget {
   const LoginRegisterPage({super.key});
 
@@ -74,12 +74,14 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
       );
 
       if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final String token = responseData['token'];
+
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const NextPage()),
+          MaterialPageRoute(builder: (context) => DashboardPage(token: token)),
         );
       } else {
-        // Handle login error
         _showErrorDialog('Login gagal, email atau password salah.');
       }
     }
@@ -138,7 +140,7 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
             key: _formKey,
             child: ListView(
               children: [
-                const SizedBox(height: 50), 
+                const SizedBox(height: 50),
                 Center(
                   child: Text(
                     _isLogin ? 'Masuk Akun' : 'Buat Akun',
@@ -287,7 +289,7 @@ class _LoginRegisterPageState extends State<LoginRegisterPage> {
                       child: const Text('Register'),
                     ),
                   ),
-                const SizedBox(height: 50), 
+                const SizedBox(height: 50),
               ],
             ),
           ),
