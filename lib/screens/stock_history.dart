@@ -107,16 +107,16 @@ class _StockPageState extends State<StockPage> {
                           child: TextField(
                             controller: searchController,
                             decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16.0),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
                               labelText: 'Cari Kode Restock',
-                              border: UnderlineInputBorder(
+                              border: const UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.blueGrey, width: 1.0),
                               ),
-                              focusedBorder: UnderlineInputBorder(
+                              focusedBorder: const UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.blue, width: 2.0),
                               ),
                               filled: true,
-                              fillColor: Colors.grey[100],
+                              fillColor: Colors.transparent,
                               suffixIcon: IconButton(
                                 icon: const Icon(Icons.search),
                                 onPressed: searchStock,
@@ -127,11 +127,7 @@ class _StockPageState extends State<StockPage> {
                             },
                           ),
                         ),
-                        SizedBox(height: 16.0),
-                        ElevatedButton(
-                          onPressed: navigateToAddStock,
-                          child: const Text('Input Data Stock'),
-                        ),
+                        const SizedBox(height: 16.0),
                         Flexible(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
@@ -140,7 +136,7 @@ class _StockPageState extends State<StockPage> {
                                 DataColumn(label: Text('Kode Restock')),
                                 DataColumn(label: Text('Jumlah Produk')),
                                 DataColumn(label: Text('Tanggal & Waktu')),
-                                DataColumn(label: Text('Action')), 
+                                DataColumn(label: Text('Actions')), 
                               ],
                               rows: searchResults.map((stock) {
                                 return DataRow(
@@ -158,7 +154,7 @@ class _StockPageState extends State<StockPage> {
                                     DataCell(Text(formatDateTime(stock['tanggal']))),
                                     DataCell(
                                       IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        icon: const Icon(Icons.delete),
                                         onPressed: () {
                                           showDeleteConfirmationDialog(stock['kode_restok']);
                                         },
@@ -179,6 +175,12 @@ class _StockPageState extends State<StockPage> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: navigateToAddStock,
+        child: const Icon(Icons.add),
+        backgroundColor: Colors.blue,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

@@ -12,18 +12,15 @@ class CustomDialog extends StatelessWidget {
       title: Text(title),
       content: Text(message),
       actions: [
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            primary: Colors.red, // Background color
-          ),
+        TextButton(
           onPressed: () {
-            Navigator.of(context).pop();
+            Navigator.pop(context); // Close the dialog
           },
           child: const Text('Cancel'),
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            primary: Colors.green, // Background color
+            primary: Colors.blue, // gg color
           ),
           onPressed: () {
             Navigator.of(context).pop(true);
