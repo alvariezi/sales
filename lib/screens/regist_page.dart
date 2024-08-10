@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sales/screens/login_page.dart';
 import 'dart:convert';
-import 'package:sales/screens/Dashboard.dart';
-import 'package:sales/screens/regist_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({Key? key}) : super(key: key);
+import '../components/regist_popup.dart';
+
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({Key? key}) : super(key: key);
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _RegisterPageState createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
 
@@ -21,32 +24,36 @@ class _LoginPageState extends State<LoginPage> {
   void dispose() {
     emailController.dispose();
     passwordController.dispose();
+    usernameController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       final response = await http.post(
-        Uri.parse('https://backend-sales-pearl.vercel.app/api/owner/login'),
+        Uri.parse('https://backend-sales-pearl.vercel.app/api/owner/register'),
         headers: <String, String>{
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, String>{
+          'username': usernameController.text,
           'email': emailController.text,
           'password': passwordController.text,
         }),
       );
 
       if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final String token = responseData['token'];
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => DashboardPage(token: token)),
-        );
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return const SuccessDialog(message: 'Anda telah berhasil menambahkan akun');
+          },
+        ).then((_) {
+          Navigator.pop(context);
+        });
       } else {
-        _showErrorDialog('Login gagal, email atau password salah.');
+        _showErrorDialog('Registrasi gagal, silakan coba lagi.');
       }
     }
   }
@@ -82,11 +89,11 @@ class _LoginPageState extends State<LoginPage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const RegisterPage()),
+                MaterialPageRoute(builder: (context) => const LoginPage()),
               );
             },
             child: const Text(
-              'Register',
+              'Login',
               style: TextStyle(color: Colors.blue, fontSize: 16),
             ),
           ),
@@ -102,13 +109,35 @@ class _LoginPageState extends State<LoginPage> {
                 const SizedBox(height: 50),
                 const Center(
                   child: Text(
-                    'Masuk Akun',
+                    'Buat Akun',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
+                ),
+                const SizedBox(height: 20),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Username',
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                TextFormField(
+                  controller: usernameController,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Username tidak boleh kosong';
+                    }
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 20),
                 const Align(
@@ -171,11 +200,44 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
                 const SizedBox(height: 20),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Konfirmasi Password',
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
+                TextFormField(
+                  controller: confirmPasswordController,
+                  obscureText: !_isPasswordVisible,
+                  decoration: InputDecoration(
+                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isPasswordVisible = !_isPasswordVisible;
+                        });
+                      },
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value != passwordController.text) {
+                      return 'Password tidak cocok';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: _login,
-                    child: const Text('Login'),
+                    onPressed: _register,
+                    child: const Text('Register'),
                   ),
                 ),
                 const SizedBox(height: 50),

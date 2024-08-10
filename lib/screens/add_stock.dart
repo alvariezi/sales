@@ -58,8 +58,8 @@ class _AddStockPageState extends State<AddStockPage> {
         context: context,
         builder: (BuildContext context) {
           return const CustomDialog(
-            title: 'Yakin menambahkan data??',
-            message: 'Jika iya klik confirm, Jika tidak klik cancel',
+            title: 'Konfirmasi tambah',
+            message: 'Apakah data yang anda tambahkan benar?',
           );
         },
       );
