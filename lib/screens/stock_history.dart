@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:sales/components/delete_restock_produk.dart';
-import 'package:sales/screens/add_stock.dart';
 import 'package:sales/screens/stock_produk_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sales/components/delete_confirmation_dialog.dart';
+import 'package:sales/screens/add_stock.dart';
 
 class StockPage extends StatefulWidget {
   const StockPage({super.key});
@@ -12,20 +13,9 @@ class StockPage extends StatefulWidget {
 }
 
 class _StockPageState extends State<StockPage> {
-  final List<Map<String, dynamic>> stockHistory = [
-    {'kode_restok': 'RS001', 'jumlah_produk': '5', 'tanggal': '2023-12-05T14:30:00'},
-    {'kode_restok': 'RS002', 'jumlah_produk': '5', 'tanggal': '2023-12-15T08:15:00'},
-    {'kode_restok': 'RS003', 'jumlah_produk': '5', 'tanggal': '2023-12-25T18:45:00'},
-  ];
-
+  List<Map<String, dynamic>> stockHistory = [];
   final TextEditingController searchController = TextEditingController();
-  List<Map<String, dynamic>> searchResults = [];
-
-  @override
-  void initState() {
-    super.initState();
-    searchResults = stockHistory;
-  }
+  String? filterQuery;
 
   @override
   void dispose() {
@@ -33,26 +23,50 @@ class _StockPageState extends State<StockPage> {
     super.dispose();
   }
 
-  void searchStock() {
+  Future<void> debugPrintToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    debugPrint('Token: $token');
+  }
+
+  void addStock(Map<String, dynamic> stock) {
     setState(() {
-      searchResults = stockHistory.where((stock) {
-        return stock['kode_restok']!.toLowerCase().contains(searchController.text.toLowerCase());
-      }).toList();
+      stockHistory.add(stock);
+      searchController.clear();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Berhasil menambahkan stok'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void deleteStock(String kodeRestok) {
+    setState(() {
+      stockHistory.removeWhere((stock) => stock['kode_restok'] == kodeRestok);
     });
   }
 
-  void navigateToAddStock() {
+  void showAddStockDialog() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddStockPage()),
     );
   }
 
-  String formatDateTime(String dateTimeString) {
-    DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
-    String formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
-    String timeZone = "WIB";
-    return '$formattedDate $timeZone';
+  void showDeleteConfirmationDialog(String kodeRestok) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return DeleteConfirmationDialog(
+          onConfirm: () {
+            deleteStock(kodeRestok);
+          },
+        );
+      },
+    );
   }
 
   void navigateToProductDetails(String kodeRestok, String jumlahProduk) {
@@ -67,28 +81,33 @@ class _StockPageState extends State<StockPage> {
     );
   }
 
-  void showDeleteConfirmationDialog(String kodeRestok) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return DeleteRestock(
-          kodeRestok: kodeRestok,
-          onConfirm: () {
-            setState(() {
-              stockHistory.removeWhere((stock) => stock['kode_restok'] == kodeRestok);
-              searchResults = stockHistory;
-            });
-          },
-        );
-      },
-    );
+  String formatDateTime(String dateTimeString) {
+    DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
+    String formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
+    String timeZone = "WIB";
+    return '$formattedDate $timeZone';
   }
 
   @override
   Widget build(BuildContext context) {
+    List<Map<String, dynamic>> filteredStockHistory = filterQuery == null
+        ? stockHistory
+        : stockHistory
+            .where((stock) =>
+                stock['kode_restok']
+                    .toLowerCase()
+                    .contains(filterQuery!.toLowerCase()))
+            .toList();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manajemen Stok'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info),
+            onPressed: debugPrintToken,
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -102,32 +121,19 @@ class _StockPageState extends State<StockPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: TextField(
-                            controller: searchController,
-                            decoration: InputDecoration(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
-                              labelText: 'Cari Kode Restock',
-                              border: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blueGrey, width: 1.0),
-                              ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.blue, width: 2.0),
-                              ),
-                              filled: true,
-                              fillColor: Colors.transparent,
-                              suffixIcon: IconButton(
-                                icon: const Icon(Icons.search),
-                                onPressed: searchStock,
-                              ),
-                            ),
-                            onChanged: (value) {
-                              searchStock();
-                            },
+                        TextField(
+                          controller: searchController,
+                          decoration: const InputDecoration(
+                            labelText: 'Cari Kode Restock',
+                            suffixIcon: Icon(Icons.search),
                           ),
+                          onChanged: (query) {
+                            setState(() {
+                              filterQuery = query;
+                            });
+                          },
                         ),
-                        const SizedBox(height: 16.0),
+                        const SizedBox(height: 20),
                         Flexible(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
@@ -136,9 +142,9 @@ class _StockPageState extends State<StockPage> {
                                 DataColumn(label: Text('Kode Restock')),
                                 DataColumn(label: Text('Jumlah Produk')),
                                 DataColumn(label: Text('Tanggal & Waktu')),
-                                DataColumn(label: Text('Actions')), 
+                                DataColumn(label: Text('Actions')),
                               ],
-                              rows: searchResults.map((stock) {
+                              rows: filteredStockHistory.map((stock) {
                                 return DataRow(
                                   cells: [
                                     DataCell(Text(stock['kode_restok'])),
@@ -153,11 +159,15 @@ class _StockPageState extends State<StockPage> {
                                     ),
                                     DataCell(Text(formatDateTime(stock['tanggal']))),
                                     DataCell(
-                                      IconButton(
-                                        icon: const Icon(Icons.delete),
-                                        onPressed: () {
-                                          showDeleteConfirmationDialog(stock['kode_restok']);
-                                        },
+                                      Row(
+                                        children: [
+                                          IconButton(
+                                            icon: const Icon(Icons.delete),
+                                            onPressed: () {
+                                              showDeleteConfirmationDialog(stock['kode_restok']);
+                                            },
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
@@ -176,9 +186,8 @@ class _StockPageState extends State<StockPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: navigateToAddStock,
+        onPressed: showAddStockDialog,
         child: const Icon(Icons.add),
-        backgroundColor: Colors.blue,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
