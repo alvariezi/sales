@@ -1,6 +1,5 @@
-// ignore_for_file: unused_field, library_private_types_in_public_api
-
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../components/delete_confirmation_dialog.dart';
 import '../components/sales_dialog.dart';
 
@@ -27,6 +26,12 @@ class _SalesPageState extends State<SalesPage> {
     _phoneController.dispose();
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _debugPrintToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    debugPrint('Token: $token');
   }
 
   void _addSale() {
@@ -122,7 +127,7 @@ class _SalesPageState extends State<SalesPage> {
       builder: (context) {
         return DeleteConfirmationDialog(
           onConfirm: () {
-            _deleteSale(index); // Delete the sale if confirmed
+            _deleteSale(index); 
           },
         );
       },
@@ -144,6 +149,12 @@ class _SalesPageState extends State<SalesPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sales CRUD'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info),
+            onPressed: _debugPrintToken,
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(

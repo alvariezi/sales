@@ -20,7 +20,7 @@ class CustomDialog extends StatelessWidget {
         ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            primary: Colors.blue, // gg color
+            backgroundColor: Colors.blue, // gg color
           ),
           onPressed: () {
             Navigator.of(context).pop(true);
