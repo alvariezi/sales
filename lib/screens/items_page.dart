@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, avoid_print, unused_field, library_private_types_in_public_api
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -43,7 +45,7 @@ class _ItemsPageState extends State<ItemsPage> {
     final String? token = prefs.getString('token');
     
     if (token != null) {
-      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
+      const url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
       final response = await http.get(
         Uri.parse(url),
         headers: {
@@ -102,7 +104,7 @@ Future<void> _addItem() async {
   final String? token = prefs.getString('token');
   
   if (token != null) {
-    final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
+    const url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
     final response = await http.post(
       Uri.parse(url),
       headers: {
@@ -128,7 +130,7 @@ Future<void> _addItem() async {
 
       await _fetchItemsFromApi(); 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Produk berhasil diperbarui')),
+        const SnackBar(content: Text('Produk berhasil ditambahkan')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -165,11 +167,11 @@ Future<void> _addItem() async {
     if (response.statusCode == 200) {
       await _fetchItemsFromApi(); 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Produk berhasil diperbarui')),
+        const SnackBar(content: Text('Produk berhasil diperbarui')),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal memperbarui produk')),
+        const SnackBar(content: Text('Gagal memperbarui produk')),
       );
     }
   } else {
@@ -200,12 +202,12 @@ Future<void> _addItem() async {
         _filteredItems.removeAt(index); 
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Produk berhasil dihapus')),
+        const SnackBar(content: Text('Produk berhasil dihapus')),
       );
       await _fetchItemsFromApi();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menghapus produk')),
+        const SnackBar(content: Text('Gagal menghapus produk')),
       );
     }
   } else {

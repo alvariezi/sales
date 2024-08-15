@@ -5,7 +5,7 @@ class AddItemDialog extends StatelessWidget {
   final TextEditingController kodeController;
   final VoidCallback onConfirm;
 
-  AddItemDialog({
+  const AddItemDialog({super.key, 
     required this.namaController,
     required this.kodeController,
     required this.onConfirm,
