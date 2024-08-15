@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:sales/components/delete_restock_produk.dart';
+import 'package:sales/screens/add_stock.dart';
 import 'package:sales/screens/stock_produk_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sales/components/delete_confirmation_dialog.dart';
-import 'package:sales/screens/add_stock.dart';
 
 class StockPage extends StatefulWidget {
   const StockPage({super.key});
@@ -46,9 +46,7 @@ class _StockPageState extends State<StockPage> {
 
       if (response.statusCode == 200) {
         final jsonResponse = json.decode(response.body);
-        print(jsonResponse["history_stok"]);
         final List<dynamic> responseData = jsonResponse["history_stok"];
-        debugPrint('$responseData');
         setState(() {
           stockHistory = responseData.map((stock) {
             return {
@@ -71,10 +69,54 @@ class _StockPageState extends State<StockPage> {
     });
   }
 
-  void deleteStock(String kodeRestock) {
-    setState(() {
-      stockHistory.removeWhere((stock) => stock['kode_restock'] == kodeRestock);
-    });
+  void deleteRestock(String kodeRestock) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    if (token != null) {
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/restock/$kodeRestock';
+
+      try {
+        final response = await http.delete(
+          Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        if (response.statusCode == 200) {
+          setState(() {
+            stockHistory.removeWhere((stock) => stock['kode_restock'] == kodeRestock);
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Stok berhasil dihapus'),
+            ),
+          );
+        } else {
+          debugPrint('Failed to delete stock. Status code: ${response.statusCode}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Gagal menghapus stok. Coba lagi.'),
+            ),
+          );
+        }
+      } catch (error) {
+        debugPrint('Error during deleting stock: $error');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Terjadi kesalahan saat menghapus stok.'),
+          ),
+        );
+      }
+    } else {
+      debugPrint('Token tidak ditemukan.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Token tidak ditemukan.'),
+        ),
+      );
+    }
   }
 
   void showAddStockDialog() {
@@ -84,13 +126,15 @@ class _StockPageState extends State<StockPage> {
     );
   }
 
-  void showDeleteConfirmationDialog(String kodeRestock) {
+  void showDeleteRestock(String kodeRestock) {
     showDialog(
       context: context,
       builder: (context) {
-        return DeleteConfirmationDialog(
+        return DeleteRestock(
+          kodeRestok: kodeRestock,
           onConfirm: () {
-            deleteStock(kodeRestock);
+            deleteRestock(kodeRestock);
+            Navigator.of(context).pop(); // Close the dialog after confirmation
           },
         );
       },
@@ -193,7 +237,6 @@ class _StockPageState extends State<StockPage> {
                                           '${(stock['list_produk'] as List<dynamic>).length} items',
                                           style: TextStyle(
                                             color: Colors.blue,
-                                            // Removed the underline from the text
                                             decoration: TextDecoration.none,
                                           ),
                                         ),
@@ -207,7 +250,7 @@ class _StockPageState extends State<StockPage> {
                                           IconButton(
                                             icon: const Icon(Icons.delete),
                                             onPressed: () {
-                                              showDeleteConfirmationDialog(
+                                              showDeleteRestock(
                                                   stock['kode_restock']);
                                             },
                                           ),
