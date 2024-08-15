@@ -33,40 +33,40 @@ class _ItemsPageState extends State<ItemsPage> {
   }
 
   Future<void> _fetchItemsFromApi() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString('token');
-    
-    if (token != null) {
-      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
-      );
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? token = prefs.getString('token');
+  
+  if (token != null) {
+    final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> inventory = responseData['inventory'];
-        setState(() {
-          _items.clear();
-          for (var item in inventory) {
-            _items.add({
-              '_id': item['_id'], 
-              'kode': item['kode_produk'],
-              'nama': item['nama_produk'],
-            });
-          }
-        });
-      } else {
-        print('Failed to load items');
-      }
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      final List<dynamic> inventory = responseData['inventory'];
+      setState(() {
+        _items.clear();
+        for (var item in inventory) {
+          _items.add({
+            '_id': item['_id'] ?? '', 
+            'kode': item['kode_produk'] ?? '',
+            'nama': item['nama_produk'] ?? '',
+          });
+        }
+      });
     } else {
-      print('No token found');
+      print('Failed to load items');
     }
+  } else {
+    print('No token found');
   }
+}
 
-  Future<void> _addItem() async {
+Future<void> _addItem() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   final String? token = prefs.getString('token');
   
@@ -84,14 +84,14 @@ class _ItemsPageState extends State<ItemsPage> {
       }),
     );
 
-   if (response.statusCode == 200 || response.statusCode == 201) { 
+    if (response.statusCode == 200 || response.statusCode == 201) { 
       final newItem = jsonDecode(response.body);
 
       setState(() {
         _items.add({
-          '_id': newItem['_id'], 
-          'kode': newItem['kode_produk'],
-          'nama': newItem['nama_produk'],
+          '_id': newItem['_id'] ?? '', 
+          'kode': newItem['kode_produk'] ?? '',
+          'nama': newItem['nama_produk'] ?? '',
         });
       });
 
@@ -108,6 +108,7 @@ class _ItemsPageState extends State<ItemsPage> {
     );
   }
 }
+
 
 
   Future<void> _editItem() async {
@@ -225,36 +226,37 @@ class _ItemsPageState extends State<ItemsPage> {
                         Flexible(
                           child: SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(label: Text('Nama Barang')),
-                                DataColumn(label: Text('Kode Barang')),
-                                DataColumn(label: Text('Actions')),
-                              ],
-                              rows: _items.map((item) {
-                                int index = _items.indexOf(item);
-                                return DataRow(
-                                  cells: [
-                                    DataCell(Text(item['nama'])),
-                                    DataCell(Text(item['kode'])),
-                                    DataCell(
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.edit),
-                                            onPressed: () => _showEditDialog(index),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete),
-                                            onPressed: () => _deleteItem(index),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
+                            child:DataTable(
+  columns: const [
+    DataColumn(label: Text('Nama Barang')),
+    DataColumn(label: Text('Kode Barang')),
+    DataColumn(label: Text('Actions')),
+  ],
+  rows: _items.map((item) {
+    int index = _items.indexOf(item);
+    return DataRow(
+      cells: [
+        DataCell(Text(item['nama'] ?? '')),
+        DataCell(Text(item['kode'] ?? '')),
+        DataCell(
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _showEditDialog(index),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete),
+                onPressed: () => _deleteItem(index),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }).toList(),
+)
+
                           ),
                         ),
                       ],
