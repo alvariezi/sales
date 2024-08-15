@@ -67,30 +67,48 @@ class _ItemsPageState extends State<ItemsPage> {
   }
 
   Future<void> _addItem() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString('token');
-    
-    if (token != null) {
-      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'nama_produk': _namaProdukController.text,
-          'kode_produk': _kodeProdukController.text,
-        }),
-      );
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? token = prefs.getString('token');
+  
+  if (token != null) {
+    final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'nama_produk': _namaProdukController.text,
+        'kode_produk': _kodeProdukController.text,
+      }),
+    );
 
-      if (response.statusCode == 201) { 
-        _fetchItemsFromApi(); 
-      } else {
-        print('Failed to add item');
-      }
+   if (response.statusCode == 200 || response.statusCode == 201) { 
+      final newItem = jsonDecode(response.body);
+
+      setState(() {
+        _items.add({
+          '_id': newItem['_id'], 
+          'kode': newItem['kode_produk'],
+          'nama': newItem['nama_produk'],
+        });
+      });
+
+      await _fetchItemsFromApi(); 
+
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to add item: ${response.statusCode}')),
+      );
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No token found')),
+    );
   }
+}
+
 
   Future<void> _editItem() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -124,7 +142,7 @@ class _ItemsPageState extends State<ItemsPage> {
     
     if (token != null) {
       final itemId = _items[index]['_id'];
-      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/$itemId';
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/delete/$itemId';
       final response = await http.delete(
         Uri.parse(url),
         headers: {
@@ -151,7 +169,6 @@ class _ItemsPageState extends State<ItemsPage> {
           kodeController: _kodeProdukController,
           onConfirm: () async {
             await _addItem();
-            Navigator.pop(context);
           },
         );
       },
@@ -169,7 +186,9 @@ class _ItemsPageState extends State<ItemsPage> {
           kodeController: _kodeProdukController,
           onConfirm: () async {
             await _editItem();
-            Navigator.pop(context);
+            if (mounted) {
+              Navigator.pop(context); 
+            }
           },
         );
       },
