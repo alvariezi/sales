@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 import 'package:sales/screens/items_page.dart';
 import 'package:sales/screens/sales_page.dart';
@@ -64,7 +66,7 @@ class DashboardPage extends StatelessWidget {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => StockPage()),
+                        MaterialPageRoute(builder: (context) => const StockPage()),
                       );
                     },
                   ),

@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, unused_field
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/delete_confirmation_dialog.dart';
@@ -151,7 +153,7 @@ class _SalesPageState extends State<SalesPage> {
         title: const Text('Sales CRUD'),
         actions: [
           IconButton(
-            icon: Icon(Icons.info),
+            icon: const Icon(Icons.info),
             onPressed: _debugPrintToken,
           ),
         ],

@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api, use_build_context_synchronously
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -177,7 +179,7 @@ class _StockPageState extends State<StockPage> {
         title: const Text('Manajemen Stok'),
         actions: [
           IconButton(
-            icon: Icon(Icons.info),
+            icon: const Icon(Icons.info),
             onPressed: () async {
               final prefs = await SharedPreferences.getInstance();
               final token = prefs.getString('token');
@@ -235,7 +237,7 @@ class _StockPageState extends State<StockPage> {
                                         },
                                         child: Text(
                                           '${(stock['list_produk'] as List<dynamic>).length} items',
-                                          style: TextStyle(
+                                          style: const TextStyle(
                                             color: Colors.blue,
                                             decoration: TextDecoration.none,
                                           ),
