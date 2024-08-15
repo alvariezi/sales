@@ -17,6 +17,7 @@ class _ItemsPageState extends State<ItemsPage> {
   final TextEditingController _namaProdukController = TextEditingController();
   final TextEditingController _kodeProdukController = TextEditingController();
   int? _editingIndex;
+  String? _editingItemId;
 
   @override
   void initState() {
@@ -51,6 +52,7 @@ class _ItemsPageState extends State<ItemsPage> {
           _items.clear();
           for (var item in inventory) {
             _items.add({
+              '_id': item['_id'], 
               'kode': item['kode_produk'],
               'nama': item['nama_produk'],
             });
@@ -64,33 +66,80 @@ class _ItemsPageState extends State<ItemsPage> {
     }
   }
 
-  void _addItem() {
-    setState(() {
-      _items.add({
-        'nama': _namaProdukController.text,
-        'kode': _kodeProdukController.text,
-      });
-      _namaProdukController.clear();
-      _kodeProdukController.clear();
-    });
+  Future<void> _addItem() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+    
+    if (token != null) {
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'nama_produk': _namaProdukController.text,
+          'kode_produk': _kodeProdukController.text,
+        }),
+      );
+
+      if (response.statusCode == 201) { 
+        _fetchItemsFromApi(); 
+      } else {
+        print('Failed to add item');
+      }
+    }
   }
 
-  void _editItem(int index) {
-    setState(() {
-      _items[index] = {
-        'nama': _namaProdukController.text,
-        'kode': _kodeProdukController.text,
-      };
-      _namaProdukController.clear();
-      _kodeProdukController.clear();
-      _editingIndex = null;
-    });
+  Future<void> _editItem() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    if (token != null && _editingItemId != null) {
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/$_editingItemId';
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'nama_produk': _namaProdukController.text,
+          'kode_produk': _kodeProdukController.text,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        _fetchItemsFromApi(); 
+      } else {
+        print('Failed to update item');
+      }
+    }
   }
 
-  void _deleteItem(int index) {
-    setState(() {
-      _items.removeAt(index);
-    });
+  void _deleteItem(int index) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+    
+    if (token != null) {
+      final itemId = _items[index]['_id'];
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/$itemId';
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _items.removeAt(index);
+        });
+      } else {
+        print('Failed to delete item');
+      }
+    }
   }
 
   void _showAddDialog() {
@@ -100,7 +149,10 @@ class _ItemsPageState extends State<ItemsPage> {
         return AddItemDialog(
           namaController: _namaProdukController,
           kodeController: _kodeProdukController,
-          onConfirm: _addItem,
+          onConfirm: () async {
+            await _addItem();
+            Navigator.pop(context);
+          },
         );
       },
     );
@@ -115,7 +167,10 @@ class _ItemsPageState extends State<ItemsPage> {
         return EditItemDialog(
           namaController: _namaProdukController,
           kodeController: _kodeProdukController,
-          onConfirm: () => _editItem(index),
+          onConfirm: () async {
+            await _editItem();
+            Navigator.pop(context);
+          },
         );
       },
     );
@@ -126,6 +181,7 @@ class _ItemsPageState extends State<ItemsPage> {
       _namaProdukController.text = _items[index]['nama'];
       _kodeProdukController.text = _items[index]['kode'];
       _editingIndex = index;
+      _editingItemId = _items[index]['_id']; 
     });
   }
 
