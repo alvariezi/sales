@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../components/add_item_dialog.dart';
 import '../components/edit_item_dialog.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ItemsPage extends StatefulWidget {
   const ItemsPage({super.key});
@@ -14,15 +15,19 @@ class ItemsPage extends StatefulWidget {
 
 class _ItemsPageState extends State<ItemsPage> {
   final List<Map<String, dynamic>> _items = [];
+   bool _isLoading = true; 
+   final List<Map<String, dynamic>> _filteredItems = [];
   final TextEditingController _namaProdukController = TextEditingController();
   final TextEditingController _kodeProdukController = TextEditingController();
   int? _editingIndex;
   String? _editingItemId;
+    final TextEditingController _searchController = TextEditingController(); 
 
   @override
   void initState() {
     super.initState();
     _fetchItemsFromApi();
+     _searchController.addListener(_filterItems);
   }
 
   @override
@@ -32,39 +37,64 @@ class _ItemsPageState extends State<ItemsPage> {
     super.dispose();
   }
 
-  Future<void> _fetchItemsFromApi() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  final String? token = prefs.getString('token');
-  
-  if (token != null) {
-    final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
-    final response = await http.get(
-      Uri.parse(url),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
+   Future<void> _fetchItemsFromApi() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+    
+    if (token != null) {
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = jsonDecode(response.body);
-      final List<dynamic> inventory = responseData['inventory'];
-      setState(() {
-        _items.clear();
-        for (var item in inventory) {
-          _items.add({
-            '_id': item['_id'] ?? '', 
-            'kode': item['kode_produk'] ?? '',
-            'nama': item['nama_produk'] ?? '',
-          });
-        }
-      });
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> inventory = responseData['inventory'];
+        setState(() {
+          _items.clear();
+           _filteredItems.clear();
+          for (var item in inventory) {
+            _items.add({
+              '_id': item['_id'] ?? '', 
+              'kode': item['kode_produk'] ?? '',
+              'nama': item['nama_produk'] ?? '',
+            });
+            _filteredItems.add({
+              'kode': item['kode_produk'] ?? '',
+              'nama': item['nama_produk'] ?? '',
+            }); 
+          }
+          _isLoading = false; // Set loading to false after data is fetched
+        });
+      } else {
+        print('Failed to load items');
+        setState(() {
+          _isLoading = false;
+        });
+      }
     } else {
-      print('Failed to load items');
+      print('No token found');
+      setState(() {
+        _isLoading = false;
+      });
     }
-  } else {
-    print('No token found');
   }
-}
+
+
+   void _filterItems() {
+    setState(() {
+      _filteredItems.clear();
+      _filteredItems.addAll(_items.where((item) {
+        final namaLower = item['nama']?.toLowerCase() ?? '';
+        final kodeLower = item['kode']?.toLowerCase() ?? '';
+        final searchLower = _searchController.text.toLowerCase();
+        return namaLower.contains(searchLower) || kodeLower.contains(searchLower);
+      }).toList());
+    });
+  }
 
 Future<void> _addItem() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -162,6 +192,8 @@ Future<void> _addItem() async {
   }
 
   void _showAddDialog() {
+     _namaProdukController.clear();
+  _kodeProdukController.clear();
     showDialog(
       context: context,
       builder: (context) {
@@ -216,54 +248,24 @@ Future<void> _addItem() async {
           padding: const EdgeInsets.all(16.0),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Flexible(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child:DataTable(
-  columns: const [
-    DataColumn(label: Text('Nama Barang')),
-    DataColumn(label: Text('Kode Barang')),
-    DataColumn(label: Text('Actions')),
-  ],
-  rows: _items.map((item) {
-    int index = _items.indexOf(item);
-    return DataRow(
-      cells: [
-        DataCell(Text(item['nama'] ?? '')),
-        DataCell(Text(item['kode'] ?? '')),
-        DataCell(
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showEditDialog(index),
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                onPressed: () => _deleteItem(index),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }).toList(),
-)
-
-                          ),
-                        ),
-                      ],
+              if (_isLoading) {
+                return _buildSkeletonLoading();
+              } else {
+                return Column(
+                  children: [
+                    TextField(
+                      controller: _searchController,
+                      decoration: const InputDecoration(
+                        labelText: 'Cari Produk',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
                     ),
-                  ),
-                ),
-              );
+                    const SizedBox(height: 16),
+                    Expanded(child: _buildDataTable()),
+                  ],
+                );
+              }
             },
           ),
         ),
@@ -273,6 +275,102 @@ Future<void> _addItem() async {
         child: const Icon(Icons.add),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildSkeletonLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: DataTable(
+        columns: const [
+          DataColumn(label: Text('Nama Barang')),
+          DataColumn(label: Text('Kode Barang')),
+          DataColumn(label: Text('Actions')),
+        ],
+        rows: List<DataRow>.generate(
+          5,
+          (index) => DataRow(
+            cells: [
+              DataCell(Container(
+                width: 100,
+                height: 20,
+                color: Colors.white,
+              )),
+              DataCell(Container(
+                width: 100,
+                height: 20,
+                color: Colors.white,
+              )),
+              DataCell(Row(
+                children: [
+                  Container(
+                    width: 20,
+                    height: 20,
+                    color: Colors.white,
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 20,
+                    height: 20,
+                    color: Colors.white,
+                  ),
+                ],
+              )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataTable() {
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height),
+        child: IntrinsicHeight(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Flexible(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: DataTable(
+                    columns: const [
+                      DataColumn(label: Text('Nama Barang')),
+                      DataColumn(label: Text('Kode Barang')),
+                      DataColumn(label: Text('Actions')),
+                    ],
+                    rows:  _filteredItems.map((item) {
+                      int index = _filteredItems.indexOf(item);
+                      return DataRow(
+                        cells: [
+                          DataCell(Text(item['nama'] ?? '')),
+                          DataCell(Text(item['kode'] ?? '')),
+                          DataCell(
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.edit),
+                                  onPressed: () => _showEditDialog(index),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete),
+                                  onPressed: () => _deleteItem(index),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
