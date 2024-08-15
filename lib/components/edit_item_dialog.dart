@@ -42,8 +42,7 @@ class EditItemDialog extends StatelessWidget {
         ),
         ElevatedButton(
           onPressed: () {
-            onConfirm();
-            Navigator.pop(context);
+            onConfirm(); 
           },
           child: const Text('Update'),
         ),
