@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../components/add_item_dialog.dart';
 import '../components/edit_item_dialog.dart';
 import 'package:shimmer/shimmer.dart';
+import '../components/delete_produk.dart';
 
 class ItemsPage extends StatefulWidget {
   const ItemsPage({super.key});
@@ -67,7 +68,7 @@ class _ItemsPageState extends State<ItemsPage> {
               'nama': item['nama_produk'] ?? '',
             }); 
           }
-          _isLoading = false; // Set loading to false after data is fetched
+          _isLoading = false; 
         });
       } else {
         print('Failed to load items');
@@ -126,7 +127,9 @@ Future<void> _addItem() async {
       });
 
       await _fetchItemsFromApi(); 
-
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Produk berhasil diperbarui')),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to add item: ${response.statusCode}')),
@@ -142,54 +145,94 @@ Future<void> _addItem() async {
 
 
   Future<void> _editItem() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString('token');
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? token = prefs.getString('token');
 
-    if (token != null && _editingItemId != null) {
-      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/$_editingItemId';
-      final response = await http.put(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'nama_produk': _namaProdukController.text,
-          'kode_produk': _kodeProdukController.text,
-        }),
+  if (token != null && _editingItemId != null) {
+    final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/$_editingItemId';
+    final response = await http.put(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'nama_produk': _namaProdukController.text,
+        'kode_produk': _kodeProdukController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      await _fetchItemsFromApi(); 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Produk berhasil diperbarui')),
       );
-
-      if (response.statusCode == 200) {
-        _fetchItemsFromApi(); 
-      } else {
-        print('Failed to update item');
-      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memperbarui produk')),
+      );
     }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No token found')),
+    );
   }
+}
+
 
   void _deleteItem(int index) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String? token = prefs.getString('token');
-    
-    if (token != null) {
-      final itemId = _items[index]['_id'];
-      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/delete/$itemId';
-      final response = await http.delete(
-        Uri.parse(url),
-        headers: {
-          'Authorization': 'Bearer $token',
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  final String? token = prefs.getString('token');
+  
+  if (token != null) {
+    final itemId = _items[index]['_id'];
+    final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/delete/$itemId';
+    final response = await http.delete(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      setState(() {
+        _items.removeAt(index);
+        _filteredItems.removeAt(index); 
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Produk berhasil dihapus')),
+      );
+      await _fetchItemsFromApi();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menghapus produk')),
+      );
+    }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No token found')),
+    );
+  }
+}
+
+
+ void _confirmDeleteItem(int index) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      return ConfirmDeleteDialog(
+        onConfirm: () {
+          Navigator.of(context).pop();
+          _deleteItem(index);
+        },
+        onCancel: () {
+          Navigator.of(context).pop(); 
         },
       );
+    },
+  );
+}
 
-      if (response.statusCode == 200) {
-        setState(() {
-          _items.removeAt(index);
-        });
-      } else {
-        print('Failed to delete item');
-      }
-    }
-  }
 
   void _showAddDialog() {
      _namaProdukController.clear();
@@ -356,7 +399,7 @@ Future<void> _addItem() async {
                                 ),
                                 IconButton(
                                   icon: const Icon(Icons.delete),
-                                  onPressed: () => _deleteItem(index),
+                                  onPressed: () => _confirmDeleteItem(index),
                                 ),
                               ],
                             ),
