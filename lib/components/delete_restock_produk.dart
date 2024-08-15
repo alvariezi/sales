@@ -13,25 +13,21 @@ class DeleteRestock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Konfirmasi Hapus'),
-      content: Text('Apakah anda yakin ingin menghapus $kodeRestok?'),
+      title: const Text('Konfirmasi Penghapusan'),
+      content: const Text('Apakah Anda yakin ingin menghapus stok ini?'),
       actions: [
         TextButton(
           onPressed: () {
-            Navigator.pop(context); // Close the dialog
+            Navigator.of(context).pop();
           },
-          child: const Text('Cancel'),
+          child: const Text('Batal'),
         ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue, // bg button
-            foregroundColor: Colors.white, // color text
-          ),
+        TextButton(
           onPressed: () {
             onConfirm();
             Navigator.of(context).pop();
           },
-          child: const Text('Confirm'),
+          child: const Text('Konfirmasi'),
         ),
       ],
     );
