@@ -31,33 +31,34 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _register() async {
-    if (_formKey.currentState!.validate()) {
-      final response = await http.post(
-        Uri.parse('https://backend-sales-pearl.vercel.app/api/owner/register'),
-        headers: <String, String>{
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-        body: jsonEncode(<String, String>{
-          'username': usernameController.text,
-          'email': emailController.text,
-          'password': passwordController.text,
-        }),
-      );
+  if (_formKey.currentState!.validate()) {
+    final response = await http.post(
+      Uri.parse('https://backend-sales-pearl.vercel.app/api/owner/register'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'username': usernameController.text,
+        'email': emailController.text,
+        'password': passwordController.text,
+      }),
+    );
 
-      if (response.statusCode == 200) {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return const SuccessDialog(message: 'Anda telah berhasil menambahkan akun');
-          },
-        ).then((_) {
-          Navigator.pop(context);
-        });
-      } else {
-        _showErrorDialog('Registrasi gagal, silakan coba lagi.');
-      }
+    if (response.statusCode == 200) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return const SuccessDialog(message: 'Anda telah berhasil menambahkan akun');
+        },
+      ).then((_) {
+        Navigator.pop(context); 
+      });
+    } else {
+      _showErrorDialog('Registrasi gagal, silakan coba lagi.');
     }
   }
+}
+
 
   void _showErrorDialog(String message) {
     showDialog(
