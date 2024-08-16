@@ -14,7 +14,7 @@ class ProductDetailsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Detail Stock: $kodeRestok'),
+        title: Text('Stock: $kodeRestok'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -23,24 +23,35 @@ class ProductDetailsPage extends StatelessWidget {
           children: [
             const SizedBox(height: 10.0),
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: Text('Kode barang')),
-                    DataColumn(label: Text('Nama barang')),
-                    DataColumn(label: Text('Qty')), 
-                  ],
-                  rows: productDetails.map((product) {
-                    return DataRow(
-                      cells: [
-                        DataCell(Text(product['kode_produk'])),
-                        DataCell(Text(product['nama_produk'])),
-                        DataCell(Text(product['qty'].toString())), 
-                      ],
-                    );
-                  }).toList(),
-                ),
+              child: ListView.builder(
+                itemCount: productDetails.length,
+                itemBuilder: (context, index) {
+                  final product = productDetails[index];
+                  return Card(
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
+                    elevation: 4.0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.all(16.0),
+                      title: Text(
+                        product['nama_produk'] ?? 'N/A',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16.0,
+                        ),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Kode barang: ${product['kode_produk'] ?? 'N/A'}'),
+                          Text('Qty: ${product['qty'] ?? 'N/A'}'),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ],

@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:sales/components/delete_restock_produk.dart';
-import 'package:sales/screens/add_stock.dart';
+import 'package:sales/components/input_data_popup.dart';
 import 'package:sales/screens/stock_produk_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shimmer/shimmer.dart';
+import 'add_stock.dart';
 
 class StockPage extends StatefulWidget {
-  const StockPage({super.key});
+  const StockPage({Key? key}) : super(key: key);
 
   @override
   _StockPageState createState() => _StockPageState();
@@ -18,11 +20,13 @@ class _StockPageState extends State<StockPage> {
   List<Map<String, dynamic>> stockHistory = [];
   final TextEditingController searchController = TextEditingController();
   String? filterQuery;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _fetchStockHistoryFromApi();
+    searchController.addListener(_filterItems);
   }
 
   @override
@@ -55,90 +59,51 @@ class _StockPageState extends State<StockPage> {
               'updatedAt': stock['updatedAt'],
             };
           }).toList();
+          _isLoading = false;
         });
       } else {
-        debugPrint('Failed to load stock');
+        print('Failed to load stock');
+        setState(() {
+          _isLoading = false;
+        });
       }
+    } else {
+      print('No token found');
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  void addStock(Map<String, dynamic> stock) {
-    setState(() {
-      stockHistory.add(stock);
-      searchController.clear();
-    });
-  }
-
-  void deleteRestock(String kodeRestock) async {
+  Future<void> _deleteStock(String kodeRestock) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
 
     if (token != null) {
       final url = 'https://backend-sales-pearl.vercel.app/api/owner/restock/$kodeRestock';
-
-      try {
-        final response = await http.delete(
-          Uri.parse(url),
-          headers: {
-            'Authorization': 'Bearer $token',
-          },
-        );
-
-        if (response.statusCode == 200) {
-          setState(() {
-            stockHistory.removeWhere((stock) => stock['kode_restock'] == kodeRestock);
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Stok berhasil dihapus'),
-            ),
-          );
-        } else {
-          debugPrint('Failed to delete stock. Status code: ${response.statusCode}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Gagal menghapus stok. Coba lagi.'),
-            ),
-          );
-        }
-      } catch (error) {
-        debugPrint('Error during deleting stock: $error');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Terjadi kesalahan saat menghapus stok.'),
-          ),
-        );
-      }
-    } else {
-      debugPrint('Token tidak ditemukan.');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Token tidak ditemukan.'),
-        ),
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
       );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          stockHistory.removeWhere((stock) => stock['kode_restock'] == kodeRestock);
+        });
+        Navigator.of(context).pop(); 
+        showSuccessPopup(context, 'Data berhasil dihapus'); 
+      } else {
+        print('Failed to delete stock');
+      }
     }
   }
 
-  void showAddStockDialog() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const AddStockPage()),
-    );
-  }
-
-  void showDeleteRestock(String kodeRestock) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return DeleteRestock(
-          kodeRestok: kodeRestock,
-          onConfirm: () {
-            deleteRestock(kodeRestock);
-            Navigator.of(context).pop(); // Close the dialog after confirmation
-          },
-        );
-      },
-    );
+  void _filterItems() {
+    setState(() {
+      filterQuery = searchController.text;
+    });
   }
 
   String formatDateTime(String dateTimeString) {
@@ -148,29 +113,13 @@ class _StockPageState extends State<StockPage> {
     return '$formattedDate $timeZone';
   }
 
-  void navigateToProductDetailsPage(
-      String kodeRestock, List<dynamic> listProduk) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetailsPage(
-          kodeRestok: kodeRestock,
-          productDetails: listProduk,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredStockHistory = filterQuery == null
+    final filteredStockHistory = filterQuery == null
         ? stockHistory
-        : stockHistory
-            .where((stock) =>
-                stock['kode_restock']
-                    .toLowerCase()
-                    .contains(filterQuery!.toLowerCase()))
-            .toList();
+        : stockHistory.where((stock) =>
+            stock['kode_restock'].toLowerCase().contains(filterQuery!.toLowerCase())
+        ).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -191,93 +140,168 @@ class _StockPageState extends State<StockPage> {
           padding: const EdgeInsets.all(16.0),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: searchController,
-                          decoration: const InputDecoration(
-                            labelText: 'Cari Kode Restock',
-                            suffixIcon: Icon(Icons.search),
-                          ),
-                          onChanged: (query) {
-                            setState(() {
-                              filterQuery = query;
-                            });
-                          },
+              if (_isLoading) {
+                return _buildSkeletonLoading();
+              } else {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: searchController,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
+                        labelText: 'Cari Produk',
+                        prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                        const SizedBox(height: 20),
-                        Flexible(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(label: Text('Kode Restock')),
-                                DataColumn(label: Text('Jumlah Produk')),
-                                DataColumn(label: Text('Tanggal')),
-                                DataColumn(label: Text('Actions')),
-                              ],
-                              rows: filteredStockHistory.map((stock) {
-                                return DataRow(
-                                  cells: [
-                                    DataCell(Text(stock['kode_restock'])),
-                                    DataCell(
-                                      GestureDetector(
-                                        onTap: () {
-                                          navigateToProductDetailsPage(
-                                            stock['kode_restock'],
-                                            stock['list_produk'],
-                                          );
-                                        },
-                                        child: Text(
-                                          '${(stock['list_produk'] as List<dynamic>).length} items',
-                                          style: TextStyle(
-                                            color: Colors.blue,
-                                            decoration: TextDecoration.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columns: const [
+                            DataColumn(
+                              label: Text(
+                                'Kode Restock',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Jumlah Produk',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Tanggal',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            DataColumn(
+                              label: Text(
+                                'Action',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                          rows: filteredStockHistory.map((stock) {
+                            final listProduk = stock['list_produk'] as List<dynamic>;
+                            return DataRow(
+                              cells: [
+                                DataCell(Text(stock['kode_restock'] ?? '')),
+                                DataCell(
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => ProductDetailsPage(
+                                            kodeRestok: stock['kode_restock'],
+                                            productDetails: listProduk,
                                           ),
                                         ),
-                                      ),
+                                      );
+                                    },
+                                    child: Text(
+                                      '${listProduk.length} items',
+                                      style: TextStyle(color: Colors.blue),
                                     ),
-                                    DataCell(Text(
-                                        formatDateTime(stock['updatedAt']))),
-                                    DataCell(
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.delete),
-                                            onPressed: () {
-                                              showDeleteRestock(
-                                                  stock['kode_restock']);
+                                  ),
+                                ),
+                                DataCell(Text(formatDateTime(stock['updatedAt'] ?? ''))),
+                                DataCell(
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () async {
+                                      final bool? shouldDelete = await showDialog(
+                                        context: context,
+                                        builder: (BuildContext context) {
+                                          return DeleteRestock(
+                                            onConfirm: () {
+                                              Navigator.of(context).pop(true);
                                             },
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
-                          ),
+                                          );
+                                        },
+                                      );
+                                      if (shouldDelete == true) {
+                                        _deleteStock(stock['kode_restock']);
+                                      }
+                                    },
+                                  ),
+                                ),
+                              ],
+                            );
+                          }).toList(),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              );
+                  ],
+                );
+              }
             },
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: showAddStockDialog,
-        child: const Icon(Icons.add),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddStockPage()),
+          );
+        },
+        child: Icon(Icons.add),
       ),
-      floatingActionButtonLocation:
-          FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildSkeletonLoading() {
+    return Shimmer.fromColors(
+      baseColor: Colors.grey[300]!,
+      highlightColor: Colors.grey[100]!,
+      child: ListView.builder(
+        itemCount: 5,
+        itemBuilder: (context, index) {
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(16),
+              title: Container(
+                color: Colors.white,
+                height: 16,
+                width: double.infinity,
+              ),
+              subtitle: Container(
+                color: Colors.white,
+                height: 14,
+                width: double.infinity,
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
