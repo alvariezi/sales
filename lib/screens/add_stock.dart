@@ -14,20 +14,47 @@ class AddStockPage extends StatefulWidget {
 class _AddStockPageState extends State<AddStockPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final List<Map<String, dynamic>> _formData = [];
-
-  final Map<String, Map<String, String>> _productData = {
-    'mie': {'id_produk': '66b44cfdd052a945fbac0644', 'kode_produk': 'P101'},
-    'wafer': {'id_produk': '66b44d0bd052a945fbac0649', 'kode_produk': 'P102'},
-    'nastar': {'id_produk': '66b44d0bd052a945fbac0675', 'kode_produk': 'P103'},
-    'gula': {'id_produk': '66b44d0bd052a945fbac0641', 'kode_produk': 'P104'},
-    'garam': {'id_produk': '66b44d0bd052a945fbac0667', 'kode_produk': 'P105'},
-    // Add more products as needed
-  };
+  final Map<String, Map<String, dynamic>> _productData = {};
 
   @override
   void initState() {
     super.initState();
+    _fetchProductData();
     _addForm();
+  }
+
+  Future<void> _fetchProductData() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    if (token != null) {
+      const url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory';
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> inventory = responseData['inventory'];
+
+        setState(() {
+          for (var item in inventory) {
+            _productData[item['nama_produk']] = {
+              'id_produk': item['_id'],
+              'kode_produk': item['kode_produk'],
+              'qty_gudang': item['qty_gudang'],
+            };
+          }
+        });
+      } else {
+        print('Failed to load product data');
+      }
+    } else {
+      print('No token found');
+    }
   }
 
   void _addForm() {
@@ -82,7 +109,12 @@ class _AddStockPageState extends State<AddStockPage> {
             'list_produk': listProduk,
           }),
         );
+
         if (response.statusCode == 201) {
+          // Update qty_gudang in the inventory
+          for (var item in listProduk) {
+            await _updateInventoryQty(item['id_produk'], item['qty']);
+          }
           // Show success popup
           showSuccessPopup(
             context,
@@ -91,9 +123,32 @@ class _AddStockPageState extends State<AddStockPage> {
         } else {
           showSuccessPopup(
             context,
-            '',
+            'Gagal menambahkan data',
           );
         }
+      }
+    }
+  }
+
+  Future<void> _updateInventoryQty(String idProduk, int qty) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    if (token != null) {
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/update_qty/$idProduk';
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'qty_gudang': qty,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        print('Failed to update qty_gudang');
       }
     }
   }
@@ -149,7 +204,7 @@ class _AddStockPageState extends State<AddStockPage> {
                                 },
                                 validator: (value) {
                                   return value == null
-                                      ? 'Nama produk harus terisi'
+                                      ? 'produk harus terisi'
                                       : null;
                                 },
                               ),
