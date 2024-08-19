@@ -45,7 +45,6 @@ class _LoginPageState extends State<LoginPage> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
 
-      // Menampilkan dialog "Login berhasil" yang lebih menarik
       showDialog(
         context: context,
         builder: (BuildContext context) {
@@ -85,7 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: () {
-                      Navigator.of(context).pop(); // Menutup dialog
+                      Navigator.of(context).pop(); 
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(builder: (context) => DashboardPage(token: token)),
@@ -156,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () {
-                  Navigator.of(context).pop(); // Menutup dialog
+                  Navigator.of(context).pop(); 
                 },
                 style: ElevatedButton.styleFrom(
                   primary: Colors.red,
