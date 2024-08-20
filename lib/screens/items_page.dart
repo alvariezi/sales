@@ -1,3 +1,5 @@
+// ignore_for_file: unused_field, library_private_types_in_public_api, avoid_print, use_build_context_synchronously, sort_child_properties_last
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -209,7 +211,6 @@ class _ItemsPageState extends State<ItemsPage> {
         
         await _fetchItemsFromApi();
 
-        // Tampilkan SuccessDeleteDialog
         showDialog(
           context: context,
           builder: (context) {
@@ -300,7 +301,7 @@ class _ItemsPageState extends State<ItemsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('CRUD Barang'),
+        title: const Text('Data Barang'),
         backgroundColor: Colors.blueAccent,
         elevation: 0,
       ),
@@ -321,7 +322,7 @@ class _ItemsPageState extends State<ItemsPage> {
                         filled: true,
                         fillColor: Colors.white,
                         labelText: 'Cari Produk',
-                        prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
+                        prefixIcon: const Icon(Icons.search, color: Colors.blueAccent),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,

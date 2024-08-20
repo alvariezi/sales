@@ -150,7 +150,7 @@ class _SalesPageState extends State<SalesPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Sales CRUD'),
+        title: const Text('Data Sales'),
         actions: [
           IconButton(
             icon: const Icon(Icons.info),
