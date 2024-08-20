@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:sales/components/delete_restock_produk.dart';
+import 'package:sales/screens/add_stock.dart';
 import 'package:sales/screens/stock_produk_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
-import 'add_stock.dart';
 
 class StockPage extends StatefulWidget {
   const StockPage({Key? key}) : super(key: key);
@@ -62,25 +62,22 @@ class _StockPageState extends State<StockPage> {
           _isLoading = false;
         });
       } else {
-        print('Failed to load stock');
         setState(() {
           _isLoading = false;
         });
       }
     } else {
-      print('No token found');
       setState(() {
         _isLoading = false;
       });
     }
   }
 
-  Future<void> _deleteStock(String idRestok) async {
+  Future<void> _deleteStock(String idRestok, List<Map<String, dynamic>> listProduk) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     final String? token = prefs.getString('token');
 
     if (token == null) {
-      print('No token found');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Token tidak ditemukan.'),
@@ -89,10 +86,8 @@ class _StockPageState extends State<StockPage> {
       return;
     }
 
-    // Ensure that idRestok is a valid MongoDB ObjectId format
     final isValidId = RegExp(r'^[a-fA-F0-9]{24}$').hasMatch(idRestok);
     if (!isValidId) {
-      print('Invalid ID format');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('ID format tidak valid.'),
@@ -113,16 +108,42 @@ class _StockPageState extends State<StockPage> {
       setState(() {
         stockHistory.removeWhere((stock) => stock['_id'] == idRestok);
       });
-      Navigator.of(context).pop(); // Close the dialog
+      for (var produk in listProduk) {
+        await _updateQtyGudang(produk['id_produk'], produk['qty']);
+      }
+      Navigator.of(context).pop(); 
       _showSuccessPopup('Data berhasil dihapus');
     } else {
-      print('Failed to delete stock, status code: ${response.statusCode}');
-      print('Response body: ${response.body}');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Gagal menghapus data. Coba lagi.'),
         ),
       );
+    }
+  }
+
+  Future<void> _updateQtyGudang(String idProduk, int qty) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    if (token == null) {
+      return;
+    }
+
+    final url = 'https://backend-sales-pearl.vercel.app/api/owner/inventory/$idProduk';
+    final response = await http.patch(
+      Uri.parse(url),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'qty_gudang': -qty, 
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print('qty_gudang berhasil diperbarui.');
     }
   }
 
@@ -198,15 +219,6 @@ class _StockPageState extends State<StockPage> {
                             columns: const [
                               DataColumn(
                                 label: Text(
-                                  'ID',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
                                   'Kode Restock',
                                   style: TextStyle(
                                     color: Colors.black,
@@ -246,7 +258,6 @@ class _StockPageState extends State<StockPage> {
                               final listProduk = stock['list_produk'] as List<dynamic>;
                               return DataRow(
                                 cells: [
-                                  DataCell(Text(stock['_id'] ?? '')),
                                   DataCell(Text(stock['kode_restock'] ?? '')),
                                   DataCell(
                                     GestureDetector(
@@ -283,7 +294,7 @@ class _StockPageState extends State<StockPage> {
                                           },
                                         );
                                         if (shouldDelete == true) {
-                                          _deleteStock(stock['_id']);
+                                          _deleteStock(stock['_id'], listProduk.cast<Map<String, dynamic>>());
                                         }
                                       },
                                     ),
@@ -306,10 +317,12 @@ class _StockPageState extends State<StockPage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddStockPage()),
+            MaterialPageRoute(
+              builder: (context) => const AddStockPage(),
+            ),
           );
         },
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -322,37 +335,20 @@ class _StockPageState extends State<StockPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            color: Colors.grey,
-            width: double.infinity,
-            height: 48,
+            margin: const EdgeInsets.only(bottom: 16.0),
+            height: 48.0,
+            color: Colors.white,
           ),
-          const SizedBox(height: 20),
-          Flexible(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minWidth: MediaQuery.of(context).size.width,
-                ),
-                child: DataTable(
-                  columns: const [
-                    DataColumn(label: SkeletonText(width: 50, height: 18)),
-                    DataColumn(label: SkeletonText(width: 100, height: 18)),
-                    DataColumn(label: SkeletonText(width: 150, height: 18)),
-                    DataColumn(label: SkeletonText(width: 100, height: 18)),
-                    DataColumn(label: SkeletonText(width: 80, height: 18)),
-                  ],
-                  rows: List.generate(
-                    5,
-                    (index) => DataRow(
-                      cells: List.generate(
-                        5,
-                        (index) => DataCell(SkeletonText(width: 80, height: 18)),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: 6,
+              itemBuilder: (context, index) {
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16.0),
+                  height: 80.0,
+                  color: Colors.white,
+                );
+              },
             ),
           ),
         ],
@@ -377,24 +373,6 @@ class _StockPageState extends State<StockPage> {
           ],
         );
       },
-    );
-  }
-}
-
-
-class SkeletonText extends StatelessWidget {
-  final double width;
-  final double height;
-
-  const SkeletonText({Key? key, required this.width, required this.height})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.grey,
-      width: width,
-      height: height,
     );
   }
 }

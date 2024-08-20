@@ -33,16 +33,33 @@ class DeleteRestock extends StatelessWidget {
           onPressed: () {
             Navigator.of(context).pop(false); // Cancel
           },
-          child: const Text('Batal'),
+          child: const Text(
+            'Batal',
+            style: TextStyle(color: Colors.blueAccent),
+          ),
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+              side: BorderSide(color: Colors.blueAccent),
+            ),
+          ),
         ),
-        TextButton(
-          onPressed: () {
-            onConfirm();
-          },
-          child: const Text('Hapus'),
+        ElevatedButton(
+          onPressed: onConfirm,
+          child: const Text(
+            'Hapus',
+            style: TextStyle(color: Colors.white),
+          ),
+          style: ElevatedButton.styleFrom(
+            primary: Colors.redAccent,
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+          ),
         ),
       ],
     );
   }
 }
-
