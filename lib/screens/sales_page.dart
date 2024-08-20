@@ -1,136 +1,156 @@
-// ignore_for_file: library_private_types_in_public_api, unused_field
-
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../components/delete_confirmation_dialog.dart';
-import '../components/sales_dialog.dart';
+import '../components/succes_add_dialog.dart';
 
 class SalesPage extends StatefulWidget {
-  const SalesPage({super.key});
-
   @override
   _SalesPageState createState() => _SalesPageState();
 }
 
 class _SalesPageState extends State<SalesPage> {
-  final List<Map<String, dynamic>> _sales = [];
-  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _namaController = TextEditingController();
+  final TextEditingController _noHPController = TextEditingController();
   final TextEditingController _alamatController = TextEditingController();
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _searchController = TextEditingController();
-  int? _editingIndex;
-  String? _filterQuery;
+  final TextEditingController _passwordController = TextEditingController();
 
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _alamatController.dispose();
-    _phoneController.dispose();
-    _searchController.dispose();
-    super.dispose();
-  }
+  Future<void> addSales() async {
+    final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
 
-  Future<void> _debugPrintToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
-    debugPrint('Token: $token');
+
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'username': _usernameController.text,
+        'nama': _namaController.text,
+        'noHP': _noHPController.text,
+        'alamat': _alamatController.text,
+        'password': _passwordController.text,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return SuccessDialog(
+            message: 'Data berhasil ditambahkan!',
+            onClose: () {
+              Navigator.of(context).pop(); // Close dialog
+              Navigator.of(context).pop(); // Close bottom sheet
+            },
+          );
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal menambahkan data!')),
+      );
+    }
   }
 
-  void _addSale() {
-    setState(() {
-      _sales.add({
-        'name': _nameController.text,
-        'alamat': _alamatController.text,
-        'phone': _phoneController.text,
-      });
-      _nameController.clear();
-      _alamatController.clear();
-      _phoneController.clear();
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Berhasil menambahkan sales'),
-        duration: Duration(seconds: 2),
+  void _showAddSalesForm() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-    );
-  }
-
-  void _editSale(int index) {
-    setState(() {
-      _sales[index] = {
-        'name': _nameController.text,
-        'alamat': _alamatController.text,
-        'phone': _phoneController.text,
-      };
-      _nameController.clear();
-      _alamatController.clear();
-      _phoneController.clear();
-      _editingIndex = null;
-    });
-  }
-
-  void _deleteSale(int index) {
-    setState(() {
-      _sales.removeAt(index);
-    });
-  }
-
-  void _startEditing(int index) {
-    setState(() {
-      _nameController.text = _sales[index]['name'];
-      _alamatController.text = _sales[index]['alamat'];
-      _phoneController.text = _sales[index]['phone'];
-      _editingIndex = index;
-    });
-
-    _showEditDialog(index);
-  }
-
-  void _showAddDialog() {
-    _nameController.clear();
-    _alamatController.clear();
-    _phoneController.clear();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return SalesDialog(
-          nameController: _nameController,
-          alamatController: _alamatController,
-          phoneController: _phoneController,
-          onConfirm: _addSale,
-          title: 'Tambah Sales',
-          confirmText: 'Tambah',
-        );
-      },
-    );
-  }
-
-  void _showEditDialog(int index) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return SalesDialog(
-          nameController: _nameController,
-          alamatController: _alamatController,
-          phoneController: _phoneController,
-          onConfirm: () => _editSale(index),
-          title: 'Edit Sales',
-          confirmText: 'Update',
-        );
-      },
-    );
-  }
-
-  void _showDeleteConfirmationDialog(int index) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return DeleteConfirmationDialog(
-          onConfirm: () {
-            _deleteSale(index); 
-          },
+      builder: (BuildContext context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 20,
+            right: 20,
+            top: 16,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Tambah Data Sales',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blueAccent,
+                  ),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: 'Username',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.person),
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _namaController,
+                  decoration: InputDecoration(
+                    labelText: 'Nama',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.account_box),
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _noHPController,
+                  decoration: InputDecoration(
+                    labelText: 'No HP',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _alamatController,
+                  decoration: InputDecoration(
+                    labelText: 'Alamat',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.location_on),
+                  ),
+                ),
+                SizedBox(height: 10),
+                TextField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.lock),
+                  ),
+                  obscureText: true,
+                ),
+                SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: addSales,
+                    child: Text('Tambah Data'),
+                    style: ElevatedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      primary: Colors.blueAccent,
+                      onPrimary: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -138,104 +158,55 @@ class _SalesPageState extends State<SalesPage> {
 
   @override
   Widget build(BuildContext context) {
-    List<Map<String, dynamic>> filteredSales = _filterQuery == null
-        ? _sales
-        : _sales
-            .where((sale) =>
-                sale['alamat']
-                    .toLowerCase()
-                    .contains(_filterQuery!.toLowerCase()) ||
-                sale['name'].toLowerCase().contains(_filterQuery!.toLowerCase()))
-            .toList();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Data Sales'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.info),
-            onPressed: _debugPrintToken,
+        title: Text(
+          'Data Sales',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 22,
+            fontWeight: FontWeight.bold,
           ),
-        ],
+        ),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.blueAccent, Colors.lightBlueAccent],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextField(
-                          controller: _searchController,
-                          decoration: const InputDecoration(
-                            labelText: 'Cari Sales',
-                            suffixIcon: Icon(Icons.search),
-                          ),
-                          onChanged: (query) {
-                            setState(() {
-                              _filterQuery = query;
-                            });
-                          },
-                        ),
-                        const SizedBox(height: 20),
-                        Flexible(
-                          child: SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: DataTable(
-                              columns: const [
-                                DataColumn(label: Text('Name')),
-                                DataColumn(label: Text('Alamat')),
-                                DataColumn(label: Text('Phone Number')),
-                                DataColumn(label: Text('Actions')),
-                              ],
-                              rows: filteredSales.map((sale) {
-                                int index = _sales.indexOf(sale);
-                                return DataRow(
-                                  cells: [
-                                    DataCell(Text(sale['name'])),
-                                    DataCell(Text(sale['alamat'] ?? '')),
-                                    DataCell(Text(sale['phone'])),
-                                    DataCell(
-                                      Row(
-                                        children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.edit),
-                                            onPressed: () =>
-                                                _startEditing(index),
-                                          ),
-                                          IconButton(
-                                            icon: const Icon(Icons.delete),
-                                            onPressed: () =>
-                                                _showDeleteConfirmationDialog(index),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+      body: Container(
+        padding: EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.white, Colors.lightBlueAccent.withOpacity(0.2)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Center(
+          child: Text(
+            'Daftar Sales',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.blueAccent,
+            ),
           ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        child: const Icon(Icons.add),
+        onPressed: _showAddSalesForm,
+        child: Icon(Icons.add),
+        backgroundColor: Colors.blueAccent,
+        elevation: 5,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
