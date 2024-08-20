@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use, library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -58,7 +60,7 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.check_circle,
                     color: Colors.green,
                     size: 64,
@@ -129,7 +131,7 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.error_outline,
                 color: Colors.red,
                 size: 64,
@@ -181,24 +183,6 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const RegisterPage()),
-              );
-            },
-            child: const Text(
-              'Register',
-              style: TextStyle(color: Colors.blue, fontSize: 16),
-            ),
-          ),
-        ],
-      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -278,7 +262,7 @@ class _LoginPageState extends State<LoginPage> {
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                                color: Colors.grey,
+                                color: Colors.blue,
                               ),
                               onPressed: () {
                                 setState(() {
@@ -317,7 +301,7 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             const Text(
                               'Belum punya akun? ',
-                              style: TextStyle(color: Colors.white),
+                              style: TextStyle(color: Colors.black),
                             ),
                             TextButton(
                               onPressed: () {
@@ -327,8 +311,8 @@ class _LoginPageState extends State<LoginPage> {
                                 );
                               },
                               child: const Text(
-                                'Daftar',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                'Daftar Disini!',
+                                style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ],
