@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sales/screens/Utama.dart';
-import 'package:sales/screens/Utama.dart';
 
 void main() {
   runApp(const MyApp());
