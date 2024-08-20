@@ -11,19 +11,33 @@ class DeleteRestock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Konfirmasi Hapus'),
-      content: const Text('Apakah Anda yakin ingin menghapus data ini?'),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      title: Row(
+        children: [
+          Icon(Icons.delete, color: Colors.redAccent, size: 30),
+          const SizedBox(width: 8),
+          const Text(
+            'Konfirmasi Hapus',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+      content: const Text(
+        'Apakah Anda yakin ingin menghapus data ini?',
+        style: TextStyle(fontSize: 16),
+      ),
       actions: [
         TextButton(
           onPressed: () {
-            Navigator.of(context).pop(false); // Close the dialog without confirmation
+            Navigator.of(context).pop(false); // Cancel
           },
           child: const Text('Batal'),
         ),
         TextButton(
           onPressed: () {
-            onConfirm(); // Call the confirmation callback
-            Navigator.of(context).pop(true); // Close the dialog with confirmation
+            onConfirm();
           },
           child: const Text('Hapus'),
         ),
@@ -31,3 +45,4 @@ class DeleteRestock extends StatelessWidget {
     );
   }
 }
+
