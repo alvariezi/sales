@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -256,11 +257,11 @@ class _SalesPageState extends State<SalesPage> {
                 SizedBox(height: 10),
                 _buildTextField(_namaController, 'Nama', Icons.account_box),
                 SizedBox(height: 10),
-                _buildTextField(_noHPController, 'No HP', Icons.phone),
+                _buildTextField(_noHPController, 'No HP', Icons.phone,  isNumeric: true),
                 SizedBox(height: 10),
                 _buildTextField(_alamatController, 'Alamat', Icons.location_on),
                 SizedBox(height: 10),
-                _buildTextField(_passwordController, 'Password', Icons.lock), 
+                _buildTextField(_passwordController, 'Password', Icons.lock,) ,
                 SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -291,17 +292,20 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, String label, IconData icon) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        prefixIcon: Icon(icon, color: Colors.blueAccent),
-        labelText: label,
-        border: OutlineInputBorder(),
-        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      ),
-    );
-  }
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon, {bool isNumeric = false}) {
+  return TextField(
+    controller: controller,
+    keyboardType: isNumeric ? TextInputType.number : TextInputType.text,
+    inputFormatters: isNumeric ? [FilteringTextInputFormatter.digitsOnly] : [],
+    decoration: InputDecoration(
+      prefixIcon: Icon(icon, color: Colors.blueAccent),
+      labelText: label,
+      border: OutlineInputBorder(),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    ),
+  );
+}
+
 
    String formatDateTime(String dateTimeString) {
     DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
@@ -345,11 +349,11 @@ Widget build(BuildContext context) {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       IconButton(
-                        icon: Icon(Icons.edit),
+                        icon: Icon(Icons.edit, color: Colors.blueAccent,),
                         onPressed: () => _showAddOrEditSalesForm(sales['_id']),
                       ),
                       IconButton(
-                        icon: Icon(Icons.delete),
+                        icon: Icon(Icons.delete, color: Colors.redAccent,),
                         onPressed: () {
                           showDialog(
                             context: context,
