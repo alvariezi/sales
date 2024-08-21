@@ -18,6 +18,7 @@ class _SalesPageState extends State<SalesPage> {
 
   List<dynamic> _salesList = [];
   bool _isLoading = true;
+  String? _currentEditId;
 
   @override
   void initState() {
@@ -26,49 +27,46 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   Future<void> fetchSales() async {
-  final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
+    final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
 
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('token');
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
 
-  try {
-    final response = await http.get(
-      Uri.parse(apiUrl),
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
-    );
-
-    if (response.statusCode == 200 && mounted) {
-      final Map<String, dynamic> jsonResponse = json.decode(response.body);
-      
-
-      final List<dynamic> salesData = jsonResponse['data'];
-
-      setState(() {
-        _salesList = salesData;
-        _isLoading = false;
-      });
-    } else if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal mengambil data!')),
+    try {
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
       );
-    }
-  } catch (e) {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Terjadi kesalahan!')),
-      );
+
+      if (response.statusCode == 200 && mounted) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final List<dynamic> salesData = jsonResponse['data'];
+
+        setState(() {
+          _salesList = salesData;
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengambil data!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan!')),
+        );
+      }
     }
   }
-}
-
 
   Future<void> addSales() async {
     final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
@@ -101,8 +99,8 @@ class _SalesPageState extends State<SalesPage> {
               return SuccessDialog(
                 message: 'Data berhasil ditambahkan!',
                 onClose: () {
-                  Navigator.of(context).pop(); 
-                  Navigator.of(context).pop(); 
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
                 },
               );
             },
@@ -122,7 +120,74 @@ class _SalesPageState extends State<SalesPage> {
     }
   }
 
-  void _showAddSalesForm() {
+  Future<void> updateSales(String id) async {
+    final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales/$id';
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    try {
+      final response = await http.put(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'username': _usernameController.text,
+          'nama': _namaController.text,
+          'noHP': _noHPController.text,
+          'alamat': _alamatController.text,
+        }),
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        fetchSales();
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return SuccessDialog(
+                message: 'Data berhasil diperbarui!',
+                onClose: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).pop();
+                },
+              );
+            },
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal memperbarui data!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan!')),
+        );
+      }
+    }
+  }
+
+  void _showAddOrEditSalesForm([String? id]) {
+    if (id != null) {
+      final sales = _salesList.firstWhere((element) => element['sales']['_id'] == id)['sales'];
+      _usernameController.text = sales['username'];
+      _namaController.text = sales['nama'];
+      _noHPController.text = sales['noHP'];
+      _alamatController.text = sales['alamat'];
+      _currentEditId = id;
+    } else {
+      _usernameController.clear();
+      _namaController.clear();
+      _noHPController.clear();
+      _alamatController.clear();
+      _passwordController.clear();
+      _currentEditId = null;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -144,7 +209,7 @@ class _SalesPageState extends State<SalesPage> {
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 Text(
-                  'Tambah Data Sales',
+                  _currentEditId == null ? 'Tambah Data Sales' : 'Edit Data Sales',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -187,22 +252,30 @@ class _SalesPageState extends State<SalesPage> {
                     prefixIcon: Icon(Icons.location_on),
                   ),
                 ),
-                SizedBox(height: 10),
-                TextField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.lock),
+                if (_currentEditId != null)
+                  SizedBox(height: 10),
+                if (_currentEditId != null)
+                  TextField(
+                    controller: _passwordController,
+                    decoration: InputDecoration(
+                      labelText: 'Password',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.lock),
+                    ),
+                    obscureText: true,
                   ),
-                  obscureText: true,
-                ),
                 SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: addSales,
-                    child: Text('Tambah Data'),
+                    onPressed: () {
+                      if (_currentEditId == null) {
+                        addSales();
+                      } else {
+                        updateSales(_currentEditId!);
+                      }
+                    },
+                    child: Text(_currentEditId == null ? 'Tambah Data' : 'Simpan Perubahan'),
                     style: ElevatedButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -219,6 +292,10 @@ class _SalesPageState extends State<SalesPage> {
         );
       },
     );
+  }
+
+  void _showEditSalesForm(String id) {
+    _showAddOrEditSalesForm(id);
   }
 
   @override
@@ -245,31 +322,34 @@ class _SalesPageState extends State<SalesPage> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
-          :ListView.builder(
-  padding: EdgeInsets.all(16),
-  itemCount: _salesList.length,
-  itemBuilder: (context, index) {
-    final sales = _salesList[index]["sales"];
-    return Card(
-      margin: EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        title: Text(sales['nama'] ?? 'N/A'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Username: ${sales['username'] ?? 'N/A'}'),
-            Text('No HP: ${sales['noHP'] ?? 'N/A'}'),
-            Text('Alamat: ${sales['alamat'] ?? 'N/A'}'),
-            Text('Dibuat: ${sales['createdAt'] ?? 'N/A'}'),
-          ],
-        ),
-      ),
-    );
-  },
-),
-
+          : ListView.builder(
+              padding: EdgeInsets.all(16),
+              itemCount: _salesList.length,
+              itemBuilder: (context, index) {
+                final sales = _salesList[index]["sales"];
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
+                    title: Text(sales['nama'] ?? 'N/A'),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Username: ${sales['username'] ?? 'N/A'}'),
+                        Text('No HP: ${sales['noHP'] ?? 'N/A'}'),
+                        Text('Alamat: ${sales['alamat'] ?? 'N/A'}'),
+                        Text('Dibuat: ${sales['createdAt'] ?? 'N/A'}'),
+                      ],
+                    ),
+                    trailing: IconButton(
+                      icon: Icon(Icons.edit),
+                      onPressed: () => _showEditSalesForm(sales['_id']),
+                    ),
+                  ),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddSalesForm,
+        onPressed: _showAddOrEditSalesForm,
         child: Icon(Icons.add),
         backgroundColor: Colors.blueAccent,
         elevation: 5,
