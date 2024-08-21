@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sales/screens/LoginSales.dart';
 import 'package:sales/screens/login_page.dart';
 
 class SelectRolePage extends StatelessWidget {
@@ -49,7 +50,7 @@ class SelectRolePage extends StatelessWidget {
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginPage()),
+                    MaterialPageRoute(builder: (context) => const SalesLogin()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
