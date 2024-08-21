@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart'; 
 import '../components/succes_add_dialog.dart';
 
 class SalesPage extends StatefulWidget {
@@ -14,7 +15,6 @@ class _SalesPageState extends State<SalesPage> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _noHPController = TextEditingController();
   final TextEditingController _alamatController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
 
   List<dynamic> _salesList = [];
   bool _isLoading = true;
@@ -86,7 +86,7 @@ class _SalesPageState extends State<SalesPage> {
           'nama': _namaController.text,
           'noHP': _noHPController.text,
           'alamat': _alamatController.text,
-          'password': _passwordController.text,
+          'password': 'defaultpassword', // Password is hidden in the UI but required in the backend
         }),
       );
 
@@ -217,7 +217,6 @@ class _SalesPageState extends State<SalesPage> {
       _namaController.clear();
       _noHPController.clear();
       _alamatController.clear();
-      _passwordController.clear();
       _currentEditId = null;
     }
 
@@ -250,53 +249,13 @@ class _SalesPageState extends State<SalesPage> {
                   ),
                 ),
                 SizedBox(height: 16),
-                TextField(
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    labelText: 'Username',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                ),
+                _buildTextField(_usernameController, 'Username', Icons.person),
                 SizedBox(height: 10),
-                TextField(
-                  controller: _namaController,
-                  decoration: InputDecoration(
-                    labelText: 'Nama',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.account_box),
-                  ),
-                ),
+                _buildTextField(_namaController, 'Nama', Icons.account_box),
                 SizedBox(height: 10),
-                TextField(
-                  controller: _noHPController,
-                  decoration: InputDecoration(
-                    labelText: 'No HP',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.phone),
-                  ),
-                ),
+                _buildTextField(_noHPController, 'No HP', Icons.phone),
                 SizedBox(height: 10),
-                TextField(
-                  controller: _alamatController,
-                  decoration: InputDecoration(
-                    labelText: 'Alamat',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.location_on),
-                  ),
-                ),
-                if (_currentEditId == null) ...[
-                  SizedBox(height: 10),
-                  TextField(
-                    controller: _passwordController,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.lock),
-                    ),
-                    obscureText: true,
-                  ),
-                ],
+                _buildTextField(_alamatController, 'Alamat', Icons.location_on),
                 SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -309,9 +268,16 @@ class _SalesPageState extends State<SalesPage> {
                       }
                     },
                     child: Text(_currentEditId == null ? 'Tambah Data' : 'Simpan Perubahan'),
+                    style: ElevatedButton.styleFrom(
+                      primary: Colors.blueAccent,
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      textStyle: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
-                SizedBox(height: 20),
               ],
             ),
           ),
@@ -320,29 +286,23 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
-  void _showDeleteConfirmationDialog(String id) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Konfirmasi'),
-          content: Text('Apakah Anda yakin ingin menghapus data ini?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Batal'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                deleteSales(id);
-              },
-              child: Text('Hapus'),
-            ),
-          ],
-        );
-      },
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        prefixIcon: Icon(icon, color: Colors.blueAccent),
+        labelText: label,
+        border: OutlineInputBorder(),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      ),
     );
+  }
+
+   String formatDateTime(String dateTimeString) {
+    DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
+    String formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
+    String timeZone = "WIB";
+    return '$formattedDate $timeZone';
   }
 
   @override
@@ -350,6 +310,12 @@ class _SalesPageState extends State<SalesPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Data Sales'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.add),
+            onPressed: () => _showAddOrEditSalesForm(),
+          ),
+        ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -357,41 +323,65 @@ class _SalesPageState extends State<SalesPage> {
               itemCount: _salesList.length,
               itemBuilder: (context, index) {
                 final sales = _salesList[index]['sales'];
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.blueAccent,
-                    child: Text(sales['nama'][0].toUpperCase()),
-                  ),
-                  title: Text(sales['nama']),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Username: ${sales['username']}'),
-                      Text('No HP: ${sales['noHP']}'),
-                      Text('Alamat: ${sales['alamat']}'),
-                      Text('Created At: ${sales['createdAt']}'),
-                    ],
-                  ),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () => _showAddOrEditSalesForm(sales['_id']),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.delete),
-                        onPressed: () => _showDeleteConfirmationDialog(sales['_id']),
-                      ),
-                    ],
+                return Card(
+                  margin: EdgeInsets.all(8),
+                  elevation: 5,
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      child: Text(sales['username'][0].toUpperCase()),
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                    title: Text(sales['nama']),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text('Username: ${sales['username']}'),
+                        Text('No HP: ${sales['noHP']}'),
+                        Text('Alamat: ${sales['alamat']}'),
+                        Text('Created At: ${formatDateTime(sales['createdAt'] ?? '')}'),
+                      ],
+                    ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        IconButton(
+                          icon: Icon(Icons.edit),
+                          onPressed: () => _showAddOrEditSalesForm(sales['_id']),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: Text('Konfirmasi Hapus'),
+                                  content: Text('Apakah Anda yakin ingin menghapus data ini?'),
+                                  actions: <Widget>[
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: Text('Batal'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                        deleteSales(sales['_id']);
+                                      },
+                                      child: Text('Hapus'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
             ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddOrEditSalesForm(),
-        child: Icon(Icons.add),
-      ),
     );
   }
 }
