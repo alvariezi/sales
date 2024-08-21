@@ -171,6 +171,39 @@ class _SalesPageState extends State<SalesPage> {
     }
   }
 
+  Future<void> deleteSales(String id) async {
+    final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales/$id';
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    try {
+      final response = await http.delete(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        fetchSales();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Data berhasil dihapus!')),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menghapus data!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan!')),
+        );
+      }
+    }
+  }
+
   void _showAddOrEditSalesForm([String? id]) {
     if (id != null) {
       final sales = _salesList.firstWhere((element) => element['sales']['_id'] == id)['sales'];
@@ -252,9 +285,8 @@ class _SalesPageState extends State<SalesPage> {
                     prefixIcon: Icon(Icons.location_on),
                   ),
                 ),
-                if (_currentEditId != null)
+                if (_currentEditId == null) ...[
                   SizedBox(height: 10),
-                if (_currentEditId != null)
                   TextField(
                     controller: _passwordController,
                     decoration: InputDecoration(
@@ -264,6 +296,7 @@ class _SalesPageState extends State<SalesPage> {
                     ),
                     obscureText: true,
                   ),
+                ],
                 SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -276,16 +309,9 @@ class _SalesPageState extends State<SalesPage> {
                       }
                     },
                     child: Text(_currentEditId == null ? 'Tambah Data' : 'Simpan Perubahan'),
-                    style: ElevatedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      primary: Colors.blueAccent,
-                      onPrimary: Colors.white,
-                    ),
                   ),
                 ),
+                SizedBox(height: 20),
               ],
             ),
           ),
@@ -294,68 +320,77 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
-  void _showEditSalesForm(String id) {
-    _showAddOrEditSalesForm(id);
+  void _showDeleteConfirmationDialog(String id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Konfirmasi'),
+          content: Text('Apakah Anda yakin ingin menghapus data ini?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Batal'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                deleteSales(id);
+              },
+              child: Text('Hapus'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Data Sales',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blueAccent, Colors.lightBlueAccent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-        ),
+        title: Text('Data Sales'),
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
           : ListView.builder(
-              padding: EdgeInsets.all(16),
               itemCount: _salesList.length,
               itemBuilder: (context, index) {
-                final sales = _salesList[index]["sales"];
-                return Card(
-                  margin: EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    title: Text(sales['nama'] ?? 'N/A'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Username: ${sales['username'] ?? 'N/A'}'),
-                        Text('No HP: ${sales['noHP'] ?? 'N/A'}'),
-                        Text('Alamat: ${sales['alamat'] ?? 'N/A'}'),
-                        Text('Dibuat: ${sales['createdAt'] ?? 'N/A'}'),
-                      ],
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(Icons.edit),
-                      onPressed: () => _showEditSalesForm(sales['_id']),
-                    ),
+                final sales = _salesList[index]['sales'];
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blueAccent,
+                    child: Text(sales['nama'][0].toUpperCase()),
+                  ),
+                  title: Text(sales['nama']),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Username: ${sales['username']}'),
+                      Text('No HP: ${sales['noHP']}'),
+                      Text('Alamat: ${sales['alamat']}'),
+                      Text('Created At: ${sales['createdAt']}'),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () => _showAddOrEditSalesForm(sales['_id']),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () => _showDeleteConfirmationDialog(sales['_id']),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddOrEditSalesForm,
+        onPressed: () => _showAddOrEditSalesForm(),
         child: Icon(Icons.add),
-        backgroundColor: Colors.blueAccent,
-        elevation: 5,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
       ),
     );
   }
