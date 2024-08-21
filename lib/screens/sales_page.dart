@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../components/succes_add_dialog.dart';
-
 
 class SalesPage extends StatefulWidget {
   @override
@@ -28,46 +26,49 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   Future<void> fetchSales() async {
-    final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
+  final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token');
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('token');
 
-    try {
-      final response = await http.get(
-        Uri.parse(apiUrl),
-        headers: {
-          'Authorization': 'Bearer $token',
-        },
+  try {
+    final response = await http.get(
+      Uri.parse(apiUrl),
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200 && mounted) {
+      final Map<String, dynamic> jsonResponse = json.decode(response.body);
+      
+
+      final List<dynamic> salesData = jsonResponse['data'];
+
+      setState(() {
+        _salesList = salesData;
+        _isLoading = false;
+      });
+    } else if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal mengambil data!')),
       );
-
-      if (response.statusCode == 200 && mounted) {
-        final Map<String, dynamic> jsonResponse = json.decode(response.body);
-        final List<dynamic> salesData = jsonResponse['data'][0]['sales'];
-
-        setState(() {
-          _salesList = salesData;
-          _isLoading = false;
-        });
-      } else if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengambil data!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi kesalahan!')),
-        );
-      }
+    }
+  } catch (e) {
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Terjadi kesalahan!')),
+      );
     }
   }
+}
+
 
   Future<void> addSales() async {
     final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
@@ -244,28 +245,29 @@ class _SalesPageState extends State<SalesPage> {
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              padding: EdgeInsets.all(16),
-              itemCount: _salesList.length,
-              itemBuilder: (context, index) {
-                final sales = _salesList[index];
-                return Card(
-                  margin: EdgeInsets.symmetric(vertical: 8),
-                  child: ListTile(
-                    title: Text(sales['nama']),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Username: ${sales['username']}'),
-                        Text('No HP: ${sales['noHP']}'),
-                        Text('Alamat: ${sales['alamat']}'),
-                        Text('Dibuat: ${sales['createdAt']}'),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
+          :ListView.builder(
+  padding: EdgeInsets.all(16),
+  itemCount: _salesList.length,
+  itemBuilder: (context, index) {
+    final sales = _salesList[index]["sales"];
+    return Card(
+      margin: EdgeInsets.symmetric(vertical: 8),
+      child: ListTile(
+        title: Text(sales['nama'] ?? 'N/A'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Username: ${sales['username'] ?? 'N/A'}'),
+            Text('No HP: ${sales['noHP'] ?? 'N/A'}'),
+            Text('Alamat: ${sales['alamat'] ?? 'N/A'}'),
+            Text('Dibuat: ${sales['createdAt'] ?? 'N/A'}'),
+          ],
+        ),
+      ),
+    );
+  },
+),
+
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddSalesForm,
         child: Icon(Icons.add),
