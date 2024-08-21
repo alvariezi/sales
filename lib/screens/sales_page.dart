@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../components/succes_add_dialog.dart';
+
 
 class SalesPage extends StatefulWidget {
   @override
@@ -16,44 +18,106 @@ class _SalesPageState extends State<SalesPage> {
   final TextEditingController _alamatController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  List<dynamic> _salesList = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSales();
+  }
+
+  Future<void> fetchSales() async {
+    final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
+
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+
+    try {
+      final response = await http.get(
+        Uri.parse(apiUrl),
+        headers: {
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 && mounted) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        final List<dynamic> salesData = jsonResponse['data'][0]['sales'];
+
+        setState(() {
+          _salesList = salesData;
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mengambil data!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan!')),
+        );
+      }
+    }
+  }
+
   Future<void> addSales() async {
     final String apiUrl = 'https://backend-sales-pearl.vercel.app/api/owner/sales';
 
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
 
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'username': _usernameController.text,
-        'nama': _namaController.text,
-        'noHP': _noHPController.text,
-        'alamat': _alamatController.text,
-        'password': _passwordController.text,
-      }),
-    );
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'username': _usernameController.text,
+          'nama': _namaController.text,
+          'noHP': _noHPController.text,
+          'alamat': _alamatController.text,
+          'password': _passwordController.text,
+        }),
+      );
 
-    if (response.statusCode == 200) {
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return SuccessDialog(
-            message: 'Data berhasil ditambahkan!',
-            onClose: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Close bottom sheet
+      if (response.statusCode == 200 && mounted) {
+        fetchSales();
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return SuccessDialog(
+                message: 'Data berhasil ditambahkan!',
+                onClose: () {
+                  Navigator.of(context).pop(); 
+                  Navigator.of(context).pop(); 
+                },
+              );
             },
           );
-        },
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Gagal menambahkan data!')),
-      );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menambahkan data!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Terjadi kesalahan!')),
+        );
+      }
     }
   }
 
@@ -178,26 +242,30 @@ class _SalesPageState extends State<SalesPage> {
           ),
         ),
       ),
-      body: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.white, Colors.lightBlueAccent.withOpacity(0.2)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: Text(
-            'Daftar Sales',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.blueAccent,
+      body: _isLoading
+          ? Center(child: CircularProgressIndicator())
+          : ListView.builder(
+              padding: EdgeInsets.all(16),
+              itemCount: _salesList.length,
+              itemBuilder: (context, index) {
+                final sales = _salesList[index];
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
+                    title: Text(sales['nama']),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Username: ${sales['username']}'),
+                        Text('No HP: ${sales['noHP']}'),
+                        Text('Alamat: ${sales['alamat']}'),
+                        Text('Dibuat: ${sales['createdAt']}'),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
-          ),
-        ),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddSalesForm,
         child: Icon(Icons.add),
