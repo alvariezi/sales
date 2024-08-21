@@ -15,6 +15,7 @@ class _SalesPageState extends State<SalesPage> {
   final TextEditingController _namaController = TextEditingController();
   final TextEditingController _noHPController = TextEditingController();
   final TextEditingController _alamatController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   List<dynamic> _salesList = [];
   bool _isLoading = true;
@@ -86,7 +87,7 @@ class _SalesPageState extends State<SalesPage> {
           'nama': _namaController.text,
           'noHP': _noHPController.text,
           'alamat': _alamatController.text,
-          'password': 'defaultpassword', // Password is hidden in the UI but required in the backend
+          'password': _passwordController.text,
         }),
       );
 
@@ -211,12 +212,14 @@ class _SalesPageState extends State<SalesPage> {
       _namaController.text = sales['nama'];
       _noHPController.text = sales['noHP'];
       _alamatController.text = sales['alamat'];
+      _passwordController.clear(); 
       _currentEditId = id;
     } else {
       _usernameController.clear();
       _namaController.clear();
       _noHPController.clear();
       _alamatController.clear();
+      _passwordController.clear();
       _currentEditId = null;
     }
 
@@ -256,6 +259,8 @@ class _SalesPageState extends State<SalesPage> {
                 _buildTextField(_noHPController, 'No HP', Icons.phone),
                 SizedBox(height: 10),
                 _buildTextField(_alamatController, 'Alamat', Icons.location_on),
+                SizedBox(height: 10),
+                _buildTextField(_passwordController, 'Password', Icons.lock), 
                 SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
@@ -305,83 +310,82 @@ class _SalesPageState extends State<SalesPage> {
     return '$formattedDate $timeZone';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Data Sales'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => _showAddOrEditSalesForm(),
-          ),
-        ],
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _salesList.length,
-              itemBuilder: (context, index) {
-                final sales = _salesList[index]['sales'];
-                return Card(
-                  margin: EdgeInsets.all(8),
-                  elevation: 5,
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      child: Text(sales['username'][0].toUpperCase()),
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                    ),
-                    title: Text(sales['nama']),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text('Username: ${sales['username']}'),
-                        Text('No HP: ${sales['noHP']}'),
-                        Text('Alamat: ${sales['alamat']}'),
-                        Text('Created At: ${formatDateTime(sales['createdAt'] ?? '')}'),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: <Widget>[
-                        IconButton(
-                          icon: Icon(Icons.edit),
-                          onPressed: () => _showAddOrEditSalesForm(sales['_id']),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () {
-                            showDialog(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return AlertDialog(
-                                  title: Text('Konfirmasi Hapus'),
-                                  content: Text('Apakah Anda yakin ingin menghapus data ini?'),
-                                  actions: <Widget>[
-                                    TextButton(
-                                      onPressed: () => Navigator.of(context).pop(),
-                                      child: Text('Batal'),
-                                    ),
-                                    TextButton(
-                                      onPressed: () {
-                                        Navigator.of(context).pop();
-                                        deleteSales(sales['_id']);
-                                      },
-                                      child: Text('Hapus'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
-                        ),
-                      ],
-                    ),
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: Text('Data Sales'),
+    ),
+    body: _isLoading
+        ? Center(child: CircularProgressIndicator())
+        : ListView.builder(
+            itemCount: _salesList.length,
+            itemBuilder: (context, index) {
+              final sales = _salesList[index]['sales'];
+              return Card(
+                margin: EdgeInsets.all(8),
+                elevation: 5,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Text(sales['nama'][0].toUpperCase()),
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
                   ),
-                );
-              },
-            ),
-    );
-  }
+                  title: Text(sales['nama']),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text('Username: ${sales['username']}'),
+                      Text('No HP: ${sales['noHP']}'),
+                      Text('Alamat: ${sales['alamat']}'),
+                      Text('Created At: ${formatDateTime(sales['createdAt'] ?? '')}'),
+                    ],
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () => _showAddOrEditSalesForm(sales['_id']),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Konfirmasi Hapus'),
+                                content: Text('Apakah Anda yakin ingin menghapus data ini?'),
+                                actions: <Widget>[
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: Text('Batal'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                      deleteSales(sales['_id']);
+                                    },
+                                    child: Text('Hapus'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () => _showAddOrEditSalesForm(),
+      child: Icon(Icons.add),
+      backgroundColor: Colors.blueAccent,
+    ),
+  );
+}
 }

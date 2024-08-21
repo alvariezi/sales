@@ -92,7 +92,7 @@ class _SalesLoginState extends State<SalesLogin> {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        primary: Colors.blue,
+                        primary: Colors.green,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -256,7 +256,7 @@ class _SalesLoginState extends State<SalesLogin> {
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                                color: Colors.blue,
+                                color: Colors.green,
                               ),
                               onPressed: () {
                                 setState(() {
