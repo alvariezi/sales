@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sales/components/add_stock_dialog.dart';
 import 'package:sales/components/input_data_popup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -73,59 +74,76 @@ class _AddStockPageState extends State<AddStockPage> {
     });
   }
 
-  Future<void> addStock() async {
+  Future<void> _verifyAddStock() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final List<Map<String, dynamic>> listProduk = _formData.map((data) {
-        final selectedProduct = data['selectedProduct'];
-        final productData = selectedProduct != null ? _productData[selectedProduct] : null;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AddStockDialog(
+            title: 'Konfirmasi Tambah Stock',
+            message: 'Apakah Data yang ingin anda tambahkan sudah benar?',
+            onConfirm: () {},
+          );
+        },
+      );
 
-        return {
-          'id_produk': productData?['id_produk'] ?? '',
-          'kode_produk': productData?['kode_produk'] ?? '',
-          'nama_produk': selectedProduct ?? '',
-          'qty': int.tryParse(data['qtyController']?.text ?? '') ?? 0,
-        };
-      }).toList();
-
-      if (listProduk.any((item) => item['id_produk'].isEmpty || item['kode_produk'].isEmpty)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data produk tidak lengkap')),
-        );
-        return;
+      if (confirmed == true) {
+        addStock();
       }
+    }
+  }
 
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? token = prefs.getString('token');
+  Future<void> addStock() async {
+    final List<Map<String, dynamic>> listProduk = _formData.map((data) {
+      final selectedProduct = data['selectedProduct'];
+      final productData = selectedProduct != null ? _productData[selectedProduct] : null;
 
-      if (token != null) {
-        final url = 'https://backend-sales-pearl.vercel.app/api/owner/restock';
-        final response = await http.post(
-          Uri.parse(url),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'Content-Type': 'application/json',
-          },
-          body: json.encode({
-            'list_produk': listProduk,
-          }),
-        );
+      return {
+        'id_produk': productData?['id_produk'] ?? '',
+        'kode_produk': productData?['kode_produk'] ?? '',
+        'nama_produk': selectedProduct ?? '',
+        'qty': int.tryParse(data['qtyController']?.text ?? '') ?? 0,
+      };
+    }).toList();
 
-        if (response.statusCode == 201) {
-          // Update qty_gudang in the inventory
-          for (var item in listProduk) {
-            await _updateInventoryQty(item['id_produk'], item['qty']);
-          }
-          // Show success popup
-          showSuccessPopup(
-            context,
-            'Data berhasil ditambahkan',
-          );
-        } else {
-          showSuccessPopup(
-            context,
-            'Gagal menambahkan data',
-          );
+    if (listProduk.any((item) => item['id_produk'].isEmpty || item['kode_produk'].isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data produk tidak lengkap')),
+      );
+      return;
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    if (token != null) {
+      final url = 'https://backend-sales-pearl.vercel.app/api/owner/restock';
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'list_produk': listProduk,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        // Update qty_gudang in the inventory
+        for (var item in listProduk) {
+          await _updateInventoryQty(item['id_produk'], item['qty']);
         }
+        // Show success popup
+        showSuccessPopup(
+          context,
+          'Data berhasil ditambahkan',
+        );
+      } else {
+        showSuccessPopup(
+          context,
+          'Gagal menambahkan data',
+        );
       }
     }
   }
@@ -234,24 +252,26 @@ class _AddStockPageState extends State<AddStockPage> {
                           ],
                         ),
                         const SizedBox(height: 16.0),
+                        if (index == _formData.length - 1)
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.add_circle, color: Colors.blue, size: 30),
+                                onPressed: _addForm,
+                              ),
+                            ],
+                          ),
                       ],
                     );
                   },
                 ),
               ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.blue, size: 30),
-                    onPressed: _addForm,
-                  ),
-                ],
-              ),
               const SizedBox(height: 16.0),
-              ElevatedButton(
-                onPressed: addStock,
-                child: const Text('Tambah Stock'),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _verifyAddStock, // Changed to show verification popup
+                  child: const Text('Tambah Stock'),
+                ),
               ),
             ],
           ),
