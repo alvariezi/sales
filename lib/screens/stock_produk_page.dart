@@ -29,7 +29,7 @@ class ProductDetailsPage extends StatelessWidget {
                   final product = productDetails[index];
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    elevation: 4.0,
+                    elevation: 1.0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8.0),
                     ),

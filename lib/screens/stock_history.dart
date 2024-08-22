@@ -17,21 +17,13 @@ class StockPage extends StatefulWidget {
 
 class _StockPageState extends State<StockPage> {
   List<Map<String, dynamic>> stockHistory = [];
-  final TextEditingController searchController = TextEditingController();
-  String? filterQuery;
+  DateTime? selectedDate;
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _fetchStockHistoryFromApi();
-    searchController.addListener(_filterItems);
-  }
-
-  @override
-  void dispose() {
-    searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _fetchStockHistoryFromApi() async {
@@ -111,7 +103,7 @@ class _StockPageState extends State<StockPage> {
       for (var produk in listProduk) {
         await _updateQtyGudang(produk['id_produk'], produk['qty']);
       }
-      Navigator.of(context).pop(); 
+      Navigator.of(context).pop();
       _showSuccessPopup('Data berhasil dihapus');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -138,7 +130,7 @@ class _StockPageState extends State<StockPage> {
         'Content-Type': 'application/json',
       },
       body: jsonEncode({
-        'qty_gudang': -qty, 
+        'qty_gudang': -qty,
       }),
     );
 
@@ -147,10 +139,19 @@ class _StockPageState extends State<StockPage> {
     }
   }
 
-  void _filterItems() {
-    setState(() {
-      filterQuery = searchController.text;
-    });
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2101),
+    );
+
+    if (pickedDate != null && pickedDate != selectedDate) {
+      setState(() {
+        selectedDate = pickedDate;
+      });
+    }
   }
 
   String formatDateTime(String dateTimeString) {
@@ -163,29 +164,31 @@ class _StockPageState extends State<StockPage> {
     if (offsetInHours == 7) {
       timeZone = 'WIB';
     } else if (offsetInHours == 8) {
-      timeZone = 'WITA'; 
+      timeZone = 'WITA';
     } else if (offsetInHours == 9) {
-      timeZone = 'WIT'; 
+      timeZone = 'WIT';
     } else {
-      timeZone = dateTime.timeZoneName; 
+      timeZone = dateTime.timeZoneName;
     }
 
     return '$formattedDate $timeZone';
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    final filteredStockHistory = filterQuery == null
+    final filteredStockHistory = selectedDate == null
         ? stockHistory
-        : stockHistory.where((stock) =>
-            stock['kode_restock'].toLowerCase().contains(filterQuery!.toLowerCase())
-        ).toList();
+        : stockHistory.where((stock) {
+            DateTime stockDate = DateTime.parse(stock['updatedAt']).toLocal();
+            return selectedDate != null &&
+                stockDate.year == selectedDate!.year &&
+                stockDate.month == selectedDate!.month &&
+                stockDate.day == selectedDate!.day;
+          }).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manajemen Stok'),
+        title: const Text('History Restock'),
         actions: [
           IconButton(
             icon: Icon(Icons.info),
@@ -208,18 +211,29 @@ class _StockPageState extends State<StockPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextField(
-                      controller: searchController,
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
-                        labelText: 'Cari Restock',
-                        prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ElevatedButton(
+                      onPressed: () => _selectDate(context),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (selectedDate == null) 
+                            Icon(Icons.search),
+                          const SizedBox(width: 5.0), 
+                          Text(
+                            selectedDate == null
+                                ? 'Cari Restock'
+                                : 'Restock : ${DateFormat('dd-MM-yyyy').format(selectedDate!)}',
+                          ),
+                          if (selectedDate != null)
+                            IconButton(
+                              icon: Icon(Icons.refresh),
+                              onPressed: () {
+                                setState(() {
+                                  selectedDate = null;
+                                });
+                              },
+                            ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -230,7 +244,7 @@ class _StockPageState extends State<StockPage> {
                           final stock = filteredStockHistory[index];
                           final listProduk = stock['list_produk'] as List<dynamic>;
                           return Card(
-                            elevation: 2.0,
+                            elevation: 1.0,  
                             margin: const EdgeInsets.symmetric(vertical: 8.0),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -238,10 +252,10 @@ class _StockPageState extends State<StockPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    '${stock['kode_restock'] ?? ''}',
+                                    'Stock Tanggal : ${formatDateTime(stock['updatedAt'] ?? '')}',
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16.0, 
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16.0,
                                     ),
                                   ),
                                   const SizedBox(height: 4.0),
@@ -249,14 +263,16 @@ class _StockPageState extends State<StockPage> {
                                     '${listProduk.length} items',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 14.0, 
+                                      fontSize: 12.0,
                                     ),
                                   ),
                                   const SizedBox(height: 4.0),
                                   Text(
-                                    '${formatDateTime(stock['updatedAt'] ?? '')}',
+                                    'Kode Restock : ${stock['kode_restock'] ?? ''}',
                                     style: const TextStyle(
-                                      fontSize: 12.0, 
+                                      fontSize: 12.0,
+                                      fontWeight: FontWeight.normal,
+                                      color: Colors.green,
                                     ),
                                   ),
                                 ],
@@ -307,65 +323,49 @@ class _StockPageState extends State<StockPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const AddStockPage(),
+              builder: (context) => AddStockPage(),
             ),
           );
         },
-        child: const Icon(Icons.add),
+        child: Icon(Icons.add),
       ),
     );
   }
 
   Widget _buildSkeletonLoading() {
-    return Shimmer.fromColors(
-      baseColor: Colors.grey[300]!,
-      highlightColor: Colors.grey[100]!,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: const EdgeInsets.only(bottom: 16.0),
-            height: 48.0,
-            color: Colors.white,
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: 6,
-              itemBuilder: (context, index) {
-                return Card(
-                  elevation: 2.0,
-                  margin: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          height: 12.0,
-                          width: 200.0,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          height: 12.0,
-                          width: 100.0,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(height: 10),
-                        Container(
-                          height: 12.0,
-                          width: 150.0,
-                          color: Colors.white,
-                        ),
-                      ],
-                    ),
+    return ListView.builder(
+      itemCount: 5,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.grey[300]!,
+          highlightColor: Colors.grey[100]!,
+          child: Card(
+            margin: const EdgeInsets.symmetric(vertical: 8.0),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(16.0),
+              title: Container(
+                height: 20.0,
+                color: Colors.white,
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8.0),
+                  Container(
+                    height: 20.0,
+                    color: Colors.white,
                   ),
-                );
-              },
+                  const SizedBox(height: 4.0),
+                  Container(
+                    height: 14.0,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -374,14 +374,14 @@ class _StockPageState extends State<StockPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+          title: Text('Success'),
           content: Text(message),
-          actions: [
-            TextButton(
+          actions: <Widget>[
+            ElevatedButton(
+              child: Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: Text('Tutup'),
             ),
           ],
         );
