@@ -94,7 +94,10 @@ class _AddStockPageState extends State<AddStockPage> {
   }
 
   Future<void> addStock() async {
-    final List<Map<String, dynamic>> listProduk = _formData.map((data) {
+    final List<Map<String, dynamic>> listProduk = _formData.where((data) {
+      final qty = int.tryParse(data['qtyController']?.text ?? '') ?? 0;
+      return qty > 0 && data['selectedProduct'] != null;
+    }).map((data) {
       final selectedProduct = data['selectedProduct'];
       final productData = selectedProduct != null ? _productData[selectedProduct] : null;
 
@@ -106,7 +109,7 @@ class _AddStockPageState extends State<AddStockPage> {
       };
     }).toList();
 
-    if (listProduk.any((item) => item['id_produk'].isEmpty || item['kode_produk'].isEmpty)) {
+    if (listProduk.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Data produk tidak lengkap')),
       );
@@ -183,7 +186,7 @@ class _AddStockPageState extends State<AddStockPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Input Data Stock'),
+        title: const Text('Tambah Stock'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -244,33 +247,57 @@ class _AddStockPageState extends State<AddStockPage> {
                                 },
                               ),
                             ),
-                            if (index != 0)
-                              IconButton(
-                                icon: const Icon(Icons.remove_circle, color: Colors.red),
-                                onPressed: () => _removeForm(index),
-                              ),
+                            IconButton(
+                              icon: const Icon(Icons.remove_circle, color: Colors.red),
+                              onPressed: () => _removeForm(index),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 16.0),
-                        if (index == _formData.length - 1)
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.add_circle, color: Colors.blue, size: 30),
-                                onPressed: _addForm,
-                              ),
-                            ],
-                          ),
                       ],
                     );
                   },
                 ),
               ),
-              const SizedBox(height: 16.0),
               Center(
-                child: ElevatedButton(
-                  onPressed: _verifyAddStock, // Changed to show verification popup
-                  child: const Text('Tambah Stock'),
+                child: Column(
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 36.0, 
+                        height: 36.0,
+                        decoration: BoxDecoration(
+                          color: Colors.blue, 
+                          shape: BoxShape.circle, 
+                        ),
+                        child: IconButton(
+                          onPressed: _addForm,
+                          icon: const Icon(
+                            Icons.add,
+                            color: Colors.white, 
+                          ),
+                          iconSize: 20.0, 
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16.0),
+                    SizedBox(
+                      width: double.infinity, // Full width
+                      child: ElevatedButton(
+                        onPressed: _verifyAddStock,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue, // Blue background color
+                          padding: const EdgeInsets.symmetric(vertical: 16.0), // Adjust vertical padding for better height
+                        ),
+                        child: const Text(
+                          'Tambah Stock',
+                          style: TextStyle(
+                            color: Colors.white, // White text color
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
