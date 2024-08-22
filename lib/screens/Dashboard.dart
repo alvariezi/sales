@@ -30,13 +30,7 @@ class DashboardPage extends StatelessWidget {
         ],
       ),
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade100, Colors.blue.shade300],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+        color: Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -45,8 +39,8 @@ class DashboardPage extends StatelessWidget {
               Expanded(
                 child: GridView.count(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 15,
-                  mainAxisSpacing: 15,
+                  crossAxisSpacing: 5,
+                  mainAxisSpacing: 5,
                   children: [
                     _buildDashboardCard(
                       icon: Icons.account_circle,
@@ -95,62 +89,6 @@ class DashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTokenDisplay() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Your Token:',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12.0),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  spreadRadius: 1,
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Text(
-                token,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _logout(BuildContext context) async {
     Navigator.pushReplacement(
@@ -167,18 +105,13 @@ class DashboardPage extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Card(
-        elevation: 5,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
         ),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.blue.shade50, Colors.white],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: Color(0xffF4F4F4),
             borderRadius: BorderRadius.circular(15),
           ),
           child: Column(
