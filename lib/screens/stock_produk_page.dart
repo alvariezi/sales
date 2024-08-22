@@ -14,7 +14,7 @@ class ProductDetailsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Stock: $kodeRestok'),
+        title: Text('Stock Produk :'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -45,8 +45,20 @@ class ProductDetailsPage extends StatelessWidget {
                       subtitle: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Kode barang: ${product['kode_produk'] ?? 'N/A'}'),
-                          Text('Qty: ${product['qty'] ?? 'N/A'}'),
+                          Text(
+                            '${product['kode_produk'] ?? 'N/A'}',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.bold
+                              ), 
+                          ),
+                          Text(
+                            'Qty: ${product['qty'] ?? 'N/A'}',
+                            style: TextStyle(
+                              fontSize: 14.0,
+                              fontWeight: FontWeight.normal
+                            ), 
+                          ),
                         ],
                       ),
                     ),

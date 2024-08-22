@@ -156,9 +156,24 @@ class _StockPageState extends State<StockPage> {
   String formatDateTime(String dateTimeString) {
     DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
     String formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
-    String timeZone = "WIB";
+
+    String timeZone;
+    int offsetInHours = dateTime.timeZoneOffset.inHours;
+
+    if (offsetInHours == 7) {
+      timeZone = 'WIB';
+    } else if (offsetInHours == 8) {
+      timeZone = 'WITA'; 
+    } else if (offsetInHours == 9) {
+      timeZone = 'WIT'; 
+    } else {
+      timeZone = dateTime.timeZoneName; 
+    }
+
     return '$formattedDate $timeZone';
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -208,102 +223,76 @@ class _StockPageState extends State<StockPage> {
                       ),
                     ),
                     const SizedBox(height: 20),
-                    Flexible(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(
-                            minWidth: constraints.maxWidth,
-                          ),
-                          child: DataTable(
-                            columns: const [
-                              DataColumn(
-                                label: Text(
-                                  'Kode Restock',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Jumlah Produk',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Tanggal',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              DataColumn(
-                                label: Text(
-                                  'Action',
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                            rows: filteredStockHistory.map((stock) {
-                              final listProduk = stock['list_produk'] as List<dynamic>;
-                              return DataRow(
-                                cells: [
-                                  DataCell(Text(stock['kode_restock'] ?? '')),
-                                  DataCell(
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ProductDetailsPage(
-                                              kodeRestok: stock['kode_restock'],
-                                              productDetails: listProduk,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Text(
-                                        '${listProduk.length} items',
-                                        style: TextStyle(color: Colors.blue),
-                                      ),
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filteredStockHistory.length,
+                        itemBuilder: (context, index) {
+                          final stock = filteredStockHistory[index];
+                          final listProduk = stock['list_produk'] as List<dynamic>;
+                          return Card(
+                            elevation: 2.0,
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                              title: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${stock['kode_restock'] ?? ''}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16.0, 
                                     ),
                                   ),
-                                  DataCell(Text(formatDateTime(stock['updatedAt'] ?? ''))),
-                                  DataCell(
-                                    IconButton(
-                                      icon: Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () async {
-                                        final bool? shouldDelete = await showDialog(
-                                          context: context,
-                                          builder: (BuildContext context) {
-                                            return DeleteRestock(
-                                              onConfirm: () {
-                                                Navigator.of(context).pop(true);
-                                              },
-                                            );
-                                          },
-                                        );
-                                        if (shouldDelete == true) {
-                                          _deleteStock(stock['_id'], listProduk.cast<Map<String, dynamic>>());
-                                        }
-                                      },
+                                  const SizedBox(height: 4.0),
+                                  Text(
+                                    '${listProduk.length} items',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14.0, 
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4.0),
+                                  Text(
+                                    '${formatDateTime(stock['updatedAt'] ?? '')}',
+                                    style: const TextStyle(
+                                      fontSize: 12.0, 
                                     ),
                                   ),
                                 ],
-                              );
-                            }).toList(),
-                          ),
-                        ),
+                              ),
+                              trailing: IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () async {
+                                  final bool? shouldDelete = await showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return DeleteRestock(
+                                        onConfirm: () {
+                                          Navigator.of(context).pop(true);
+                                        },
+                                      );
+                                    },
+                                  );
+                                  if (shouldDelete == true) {
+                                    _deleteStock(stock['_id'], listProduk.cast<Map<String, dynamic>>());
+                                  }
+                                },
+                              ),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ProductDetailsPage(
+                                      kodeRestok: stock['kode_restock'],
+                                      productDetails: listProduk,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
@@ -343,10 +332,34 @@ class _StockPageState extends State<StockPage> {
             child: ListView.builder(
               itemCount: 6,
               itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 16.0),
-                  height: 80.0,
-                  color: Colors.white,
+                return Card(
+                  elevation: 2.0,
+                  margin: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          height: 12.0,
+                          width: 200.0,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          height: 12.0,
+                          width: 100.0,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 10),
+                        Container(
+                          height: 12.0,
+                          width: 150.0,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
+                  ),
                 );
               },
             ),
@@ -365,10 +378,10 @@ class _StockPageState extends State<StockPage> {
           content: Text(message),
           actions: [
             TextButton(
-              child: Text('Tutup'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              child: Text('Tutup'),
             ),
           ],
         );
