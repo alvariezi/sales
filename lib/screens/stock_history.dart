@@ -176,9 +176,17 @@ class _StockPageState extends State<StockPage> {
         startDate = pickedDateRange.start;
         endDate = pickedDateRange.end;
       });
+
+    if (offsetInHours == 7) {
+      timeZone = 'WIB';
+    } else if (offsetInHours == 8) {
+      timeZone = 'WITA';
+    } else if (offsetInHours == 9) {
+      timeZone = 'WIT';
+    } else {
+      timeZone = dateTime.timeZoneName;
     }
   }
-
 
 
   String formatDateTime(String dateTimeString) {
@@ -197,6 +205,16 @@ class _StockPageState extends State<StockPage> {
         return stockDate.isAfter(startDate!.subtract(Duration(days: 1))) &&
                stockDate.isBefore(endDate!.add(Duration(days: 1)));
       }).toList();
+    
+  @override
+  Widget build(BuildContext context) {
+    final filteredStockHistory = selectedDate == null
+        ? stockHistory
+        : stockHistory.where((stock) {
+            DateTime stockDate = DateTime.parse(stock['createdAt']).toLocal();
+            return stockDate.isAfter(startDate!.subtract(Duration(days: 1))) &&
+                   stockDate.isBefore(endDate!.add(Duration(days: 1)));
+          }).toList();
 
     return Scaffold(
       appBar: AppBar(

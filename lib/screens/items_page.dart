@@ -402,8 +402,8 @@ class _ItemsPageState extends State<ItemsPage> {
       itemBuilder: (context, index) {
         final item = _filteredItems[index];
         return Card(
+          color: Color(0xffF4F4F4),
           margin: const EdgeInsets.symmetric(vertical: 8),
-          elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
           ),
