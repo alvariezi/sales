@@ -139,55 +139,46 @@ class _StockPageState extends State<StockPage> {
     }
   }
 
-  Future<void> _selectDateRange(BuildContext context) async {
-    if (stockHistory.isEmpty) return;
+ Future<void> _selectDateRange(BuildContext context) async {
+  if (stockHistory.isEmpty) return;
 
-    DateTime firstDate = DateTime.parse(stockHistory.first['createdAt']).toLocal();
-    DateTime lastDate = DateTime.parse(stockHistory.last['createdAt']).toLocal();
+  // Mengambil tanggal pertama dan terakhir dari stockHistory
+  DateTime firstDate = DateTime.parse(stockHistory.first['createdAt']).toLocal();
+  DateTime lastDate = DateTime.parse(stockHistory.last['createdAt']).toLocal();
 
-    final DateTimeRange? pickedDateRange = await showDateRangePicker(
-      context: context,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      initialDateRange: DateTimeRange(
-        start: startDate ?? DateTime.now(),
-        end: endDate ?? DateTime.now(),
-      ),
-      builder: (BuildContext context, Widget? child) {
-        return Theme(
-          data: ThemeData.light().copyWith(
-            primaryColor: Colors.blue, 
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue,
-              onPrimary: Colors.white, 
-              onSurface: Colors.blue,  
-            ),
-            buttonTheme: ButtonThemeData(
-              textTheme: ButtonTextTheme.primary, 
-            ),
+  final DateTimeRange? pickedDateRange = await showDateRangePicker(
+    context: context,
+    firstDate: firstDate,
+    lastDate: lastDate.isAfter(DateTime.now()) ? DateTime.now() : lastDate,
+    initialDateRange: DateTimeRange(
+      start: startDate ?? firstDate,
+      end: endDate ?? lastDate,
+    ),
+    builder: (BuildContext context, Widget? child) {
+      return Theme(
+        data: ThemeData.light().copyWith(
+          primaryColor: Colors.blue, 
+          colorScheme: ColorScheme.light(
+            primary: Colors.blue,
+            onPrimary: Colors.white, 
+            onSurface: Colors.blue, 
           ),
-          child: child!,
-        );
-      },
-    );
+          buttonTheme: ButtonThemeData(
+            textTheme: ButtonTextTheme.primary, 
+          ),
+        ),
+        child: child!,
+      );
+    },
+  );
 
-    if (pickedDateRange != null) {
-      setState(() {
-        startDate = pickedDateRange.start;
-        endDate = pickedDateRange.end;
-      });
-
-    if (offsetInHours == 7) {
-      timeZone = 'WIB';
-    } else if (offsetInHours == 8) {
-      timeZone = 'WITA';
-    } else if (offsetInHours == 9) {
-      timeZone = 'WIT';
-    } else {
-      timeZone = dateTime.timeZoneName;
-    }
+  if (pickedDateRange != null) {
+    setState(() {
+      startDate = pickedDateRange.start;
+      endDate = pickedDateRange.end;
+    });
   }
-
+}
 
   String formatDateTime(String dateTimeString) {
     DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
@@ -205,16 +196,6 @@ class _StockPageState extends State<StockPage> {
         return stockDate.isAfter(startDate!.subtract(Duration(days: 1))) &&
                stockDate.isBefore(endDate!.add(Duration(days: 1)));
       }).toList();
-    
-  @override
-  Widget build(BuildContext context) {
-    final filteredStockHistory = selectedDate == null
-        ? stockHistory
-        : stockHistory.where((stock) {
-            DateTime stockDate = DateTime.parse(stock['createdAt']).toLocal();
-            return stockDate.isAfter(startDate!.subtract(Duration(days: 1))) &&
-                   stockDate.isBefore(endDate!.add(Duration(days: 1)));
-          }).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -412,11 +393,11 @@ class _StockPageState extends State<StockPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+          title: Text('Success'),
           content: Text(message),
           actions: <Widget>[
             ElevatedButton(
-              child: Text('Tutup'),
+              child: Text('OK'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
