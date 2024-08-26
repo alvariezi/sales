@@ -282,17 +282,17 @@ class _AddStockPageState extends State<AddStockPage> {
                     ),
                     const SizedBox(height: 16.0),
                     SizedBox(
-                      width: double.infinity, // Full width
+                      width: double.infinity, 
                       child: ElevatedButton(
                         onPressed: _verifyAddStock,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue, // Blue background color
-                          padding: const EdgeInsets.symmetric(vertical: 16.0), // Adjust vertical padding for better height
+                          backgroundColor: Colors.blue, 
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
                         ),
                         child: const Text(
                           'Tambah Stock',
                           style: TextStyle(
-                            color: Colors.white, // White text color
+                            color: Colors.white, 
                           ),
                         ),
                       ),

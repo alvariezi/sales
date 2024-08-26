@@ -12,11 +12,13 @@ Future<void> showSuccessPopup(BuildContext context, String message) {
           'Data berhasil di tambahkan',
           textAlign: TextAlign.center, 
           style: const TextStyle(
-            fontSize: 16, 
+            fontWeight: FontWeight.bold, 
+            fontSize: 17.0, 
           ),
         ),
-        actions: [
-          TextButton(
+        actions: <Widget>[
+          Center(
+            child: TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); 
                 Navigator.of(context).pushReplacement(
@@ -25,6 +27,7 @@ Future<void> showSuccessPopup(BuildContext context, String message) {
               },
               child: const Text('Tutup'),
             ),
+          )
         ],
       );
     },
