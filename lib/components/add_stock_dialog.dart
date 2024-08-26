@@ -29,7 +29,7 @@ class AddStockDialog extends StatelessWidget {
       actions: <Widget>[
         TextButton(
           onPressed: () {
-            Navigator.of(context).pop(false); // Return false to indicate cancellation
+            Navigator.of(context).pop(false); 
           },
           child: const Text(
             'Batal',
@@ -46,7 +46,7 @@ class AddStockDialog extends StatelessWidget {
         ElevatedButton(
           onPressed: () {
             onConfirm();
-            Navigator.of(context).pop(true); // Return true to indicate confirmation
+            Navigator.of(context).pop(true);
           },
           child: const Text('Tambah'),
           style: ElevatedButton.styleFrom(

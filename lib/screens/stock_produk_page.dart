@@ -56,7 +56,8 @@ class ProductDetailsPage extends StatelessWidget {
                             'Qty: ${product['qty'] ?? 'N/A'}',
                             style: TextStyle(
                               fontSize: 14.0,
-                              fontWeight: FontWeight.w600
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blue
                             ), 
                           ),
                         ],

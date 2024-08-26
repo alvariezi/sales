@@ -14,12 +14,21 @@ class SuccessDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: onClose,
-          child: const Text('Tutup'),
+      content: Text(
+          message,
+          textAlign: TextAlign.center, 
+          style: const TextStyle(
+            fontWeight: FontWeight.bold, 
+            fontSize: 17.0, 
+          ),
         ),
+      actions: <Widget>[
+        Center(
+          child: TextButton(
+            onPressed: onClose,
+            child: const Text('Tutup'),
+        ),
+        )
       ],
     );
   }

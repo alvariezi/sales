@@ -142,17 +142,18 @@ class _StockPageState extends State<StockPage> {
  Future<void> _selectDateRange(BuildContext context) async {
   if (stockHistory.isEmpty) return;
 
-  // Mengambil tanggal pertama dan terakhir dari stockHistory
   DateTime firstDate = DateTime.parse(stockHistory.first['createdAt']).toLocal();
   DateTime lastDate = DateTime.parse(stockHistory.last['createdAt']).toLocal();
 
+  DateTime today = DateTime.now();
+  
   final DateTimeRange? pickedDateRange = await showDateRangePicker(
     context: context,
     firstDate: firstDate,
-    lastDate: lastDate.isAfter(DateTime.now()) ? DateTime.now() : lastDate,
+    lastDate: lastDate.isAfter(today) ? today : lastDate,
     initialDateRange: DateTimeRange(
-      start: startDate ?? firstDate,
-      end: endDate ?? lastDate,
+      start: startDate ?? today,
+      end: endDate ?? today,
     ),
     builder: (BuildContext context, Widget? child) {
       return Theme(
@@ -179,6 +180,7 @@ class _StockPageState extends State<StockPage> {
     });
   }
 }
+
 
   String formatDateTime(String dateTimeString) {
     DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
@@ -225,26 +227,27 @@ class _StockPageState extends State<StockPage> {
                     ElevatedButton(
                       onPressed: () => _selectDateRange(context),
                       style: ElevatedButton.styleFrom(
-                        primary: Colors.white, 
-                        onPrimary: Colors.blue, 
+                        primary: Colors.white,
+                        onPrimary: Colors.blue,
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (startDate == null || endDate == null) 
-                            Icon(Icons.search, color: Colors.blue), 
-                          const SizedBox(width: 5.0), 
+                          if (startDate == null || endDate == null)
+                            Icon(Icons.calendar_month_outlined, color: Colors.blue),
+                          const SizedBox(width: 5.0),
                           Text(
                             startDate == null || endDate == null
-                                ? 'Cari Restock'
+                                ? 'Restock: All'
                                 : 'Restock: ${DateFormat('dd-MM-yyyy').format(startDate!)} s.d. ${DateFormat('dd-MM-yyyy').format(endDate!)}',
                             style: TextStyle(
-                              color: startDate == null || endDate == null ? Colors.grey : Colors.blue, 
+                              color: startDate == null || endDate == null ? Colors.black : Colors.blue,
+                              fontWeight: startDate == null || endDate == null ? FontWeight.w500 : FontWeight.normal,
                             ),
                           ),
                           if (startDate != null && endDate != null)
                             IconButton(
-                              icon: Icon(Icons.refresh, color: Colors.grey), 
+                              icon: Icon(Icons.refresh, color: Colors.grey),
                               onPressed: () {
                                 setState(() {
                                   startDate = null;
@@ -389,22 +392,32 @@ class _StockPageState extends State<StockPage> {
   }
 
   void _showSuccessPopup(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Success'),
-          content: Text(message),
-          actions: <Widget>[
-            ElevatedButton(
-              child: Text('OK'),
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+        content: Text(
+          message,
+          textAlign: TextAlign.center, 
+          style: const TextStyle(
+            fontWeight: FontWeight.bold, 
+            fontSize: 17.0, 
+          ),
+        ),
+        actions: <Widget>[
+          Center( 
+            child: TextButton(
+              child: const Text('Tutup'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-          ],
-        );
-      },
-    );
-  }
+          ),
+        ],
+      );
+    },
+  );
+}
+
 }
