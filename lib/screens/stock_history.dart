@@ -17,7 +17,8 @@ class StockPage extends StatefulWidget {
 
 class _StockPageState extends State<StockPage> {
   List<Map<String, dynamic>> stockHistory = [];
-  DateTime? selectedDate;
+  DateTime? startDate;
+  DateTime? endDate;
   bool _isLoading = true;
 
   @override
@@ -48,7 +49,7 @@ class _StockPageState extends State<StockPage> {
               '_id': stock['_id'],
               'kode_restock': stock['kode_restock'],
               'list_produk': stock['list_produk'],
-              'updatedAt': stock['updatedAt'],
+              'createdAt': stock['createdAt'],
             };
           }).toList();
           _isLoading = false;
@@ -135,31 +136,46 @@ class _StockPageState extends State<StockPage> {
     );
 
     if (response.statusCode == 200) {
-      print('qty_gudang berhasil diperbarui.');
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
+  Future<void> _selectDateRange(BuildContext context) async {
+    if (stockHistory.isEmpty) return;
+
+    DateTime firstDate = DateTime.parse(stockHistory.first['createdAt']).toLocal();
+    DateTime lastDate = DateTime.parse(stockHistory.last['createdAt']).toLocal();
+
+    final DateTimeRange? pickedDateRange = await showDateRangePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2024),
-      lastDate: DateTime(2101),
+      firstDate: firstDate,
+      lastDate: lastDate,
+      initialDateRange: DateTimeRange(
+        start: startDate ?? DateTime.now(),
+        end: endDate ?? DateTime.now(),
+      ),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: Colors.blue, 
+            colorScheme: ColorScheme.light(
+              primary: Colors.blue,
+              onPrimary: Colors.white, 
+              onSurface: Colors.blue,  
+            ),
+            buttonTheme: ButtonThemeData(
+              textTheme: ButtonTextTheme.primary, 
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
 
-    if (pickedDate != null && pickedDate != selectedDate) {
+    if (pickedDateRange != null) {
       setState(() {
-        selectedDate = pickedDate;
+        startDate = pickedDateRange.start;
+        endDate = pickedDateRange.end;
       });
-    }
-  }
-
-  String formatDateTime(String dateTimeString) {
-    DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
-    String formattedDate = DateFormat('dd-MM-yyyy HH:mm').format(dateTime);
-
-    String timeZone;
-    int offsetInHours = dateTime.timeZoneOffset.inHours;
 
     if (offsetInHours == 7) {
       timeZone = 'WIB';
@@ -170,20 +186,34 @@ class _StockPageState extends State<StockPage> {
     } else {
       timeZone = dateTime.timeZoneName;
     }
-
-    return '$formattedDate $timeZone';
   }
 
+
+  String formatDateTime(String dateTimeString) {
+    DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
+    String formattedDate = DateFormat('dd-MM-yyyy').format(dateTime); 
+    return '$formattedDate'; 
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredStockHistory = startDate == null || endDate == null
+    ? stockHistory
+    : stockHistory.where((stock) {
+        DateTime stockDate = DateTime.parse(stock['createdAt']).toLocal();
+        return stockDate.isAfter(startDate!.subtract(Duration(days: 1))) &&
+               stockDate.isBefore(endDate!.add(Duration(days: 1)));
+      }).toList();
+    
   @override
   Widget build(BuildContext context) {
     final filteredStockHistory = selectedDate == null
         ? stockHistory
         : stockHistory.where((stock) {
-            DateTime stockDate = DateTime.parse(stock['updatedAt']).toLocal();
-            return selectedDate != null &&
-                stockDate.year == selectedDate!.year &&
-                stockDate.month == selectedDate!.month &&
-                stockDate.day == selectedDate!.day;
+            DateTime stockDate = DateTime.parse(stock['createdAt']).toLocal();
+            return stockDate.isAfter(startDate!.subtract(Duration(days: 1))) &&
+                   stockDate.isBefore(endDate!.add(Duration(days: 1)));
           }).toList();
 
     return Scaffold(
@@ -212,24 +242,32 @@ class _StockPageState extends State<StockPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     ElevatedButton(
-                      onPressed: () => _selectDate(context),
+                      onPressed: () => _selectDateRange(context),
+                      style: ElevatedButton.styleFrom(
+                        primary: Colors.white, 
+                        onPrimary: Colors.blue, 
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          if (selectedDate == null) 
-                            Icon(Icons.search),
+                          if (startDate == null || endDate == null) 
+                            Icon(Icons.search, color: Colors.blue), 
                           const SizedBox(width: 5.0), 
                           Text(
-                            selectedDate == null
+                            startDate == null || endDate == null
                                 ? 'Cari Restock'
-                                : 'Restock : ${DateFormat('dd-MM-yyyy').format(selectedDate!)}',
+                                : 'Restock: ${DateFormat('dd-MM-yyyy').format(startDate!)} s.d. ${DateFormat('dd-MM-yyyy').format(endDate!)}',
+                            style: TextStyle(
+                              color: startDate == null || endDate == null ? Colors.grey : Colors.blue, 
+                            ),
                           ),
-                          if (selectedDate != null)
+                          if (startDate != null && endDate != null)
                             IconButton(
-                              icon: Icon(Icons.refresh),
+                              icon: Icon(Icons.refresh, color: Colors.grey), 
                               onPressed: () {
                                 setState(() {
-                                  selectedDate = null;
+                                  startDate = null;
+                                  endDate = null;
                                 });
                               },
                             ),
@@ -252,7 +290,7 @@ class _StockPageState extends State<StockPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'Stock Tanggal : ${formatDateTime(stock['updatedAt'] ?? '')}',
+                                    'Stock Tanggal : ${formatDateTime(stock['createdAt'] ?? '')}',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 16.0,
@@ -374,11 +412,11 @@ class _StockPageState extends State<StockPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Success'),
+          title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
           content: Text(message),
           actions: <Widget>[
             ElevatedButton(
-              child: Text('OK'),
+              child: Text('Tutup'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
