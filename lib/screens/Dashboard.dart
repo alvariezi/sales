@@ -2,6 +2,7 @@
 // ignore_for_file: unused_import, file_names
 
 import 'package:flutter/material.dart';
+import 'package:sales/screens/BarangSales.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sales/screens/items_page.dart';
 import 'package:sales/screens/sales_page.dart';
@@ -56,7 +57,10 @@ class DashboardPage extends StatelessWidget {
                       icon: Icons.account_balance_wallet_outlined,
                       title: 'Transaksi',
                       onTap: () {
-                        // Implement navigation or action
+                         Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => BarangSales()),
+                        );
                       },
                     ),
                     _buildDashboardCard(
