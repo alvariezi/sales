@@ -14,11 +14,11 @@ class DeleteRestock extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
       ),
-      title: Row(
+      title: const Row(
         children: [
           Icon(Icons.delete, color: Colors.redAccent, size: 30),
-          const SizedBox(width: 8),
-          const Text(
+          SizedBox(width: 8),
+           Text(
             'Konfirmasi Hapus',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
@@ -41,7 +41,7 @@ class DeleteRestock extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
-              side: BorderSide(color: Colors.blueAccent),
+              side: const BorderSide(color: Colors.blueAccent),
             ),
           ),
         ),

@@ -18,7 +18,7 @@ class _SalesLoginState extends State<SalesLogin> {
   final TextEditingController passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isPasswordVisible = false;
-  bool _isLoading = false; // State untuk loading indicator
+  bool _isLoading = false; 
 
   @override
   void dispose() {
@@ -30,7 +30,7 @@ class _SalesLoginState extends State<SalesLogin> {
   Future<void> _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
-        _isLoading = true; // Menampilkan loading indicator
+        _isLoading = true; 
       });
 
       final response = await http.post(
@@ -45,7 +45,7 @@ class _SalesLoginState extends State<SalesLogin> {
       );
 
       setState(() {
-        _isLoading = false; // Menyembunyikan loading indicator
+        _isLoading = false; 
       });
 
       if (response.statusCode == 200) {
@@ -311,8 +311,8 @@ class _SalesLoginState extends State<SalesLogin> {
           ),
           if (_isLoading)
             Container(
-              color: Colors.black54, // transparan hitam untuk menutupi layar
-              child: Center(
+              color: Colors.black54, 
+              child:const Center(
                 child: CircularProgressIndicator(
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),

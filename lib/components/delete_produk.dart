@@ -16,11 +16,11 @@ class ConfirmDeleteDialog extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
       ),
-      title: Row(
+      title: const Row(
         children: [
           Icon(Icons.delete, color: Colors.redAccent, size: 30),
-          const SizedBox(width: 8),
-          const Text(
+           SizedBox(width: 8),
+          Text(
             'Konfirmasi Hapus',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
@@ -52,7 +52,7 @@ class ConfirmDeleteDialog extends StatelessWidget {
             style: TextStyle(color: Colors.white),
           ),
           style: ElevatedButton.styleFrom(
-            primary: Colors.redAccent,
+            backgroundColor: Colors.redAccent,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.0),
