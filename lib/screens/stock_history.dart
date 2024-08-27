@@ -145,15 +145,13 @@ class _StockPageState extends State<StockPage> {
   DateTime firstDate = DateTime.parse(stockHistory.first['createdAt']).toLocal();
   DateTime lastDate = DateTime.parse(stockHistory.last['createdAt']).toLocal();
 
-  DateTime today = DateTime.now();
-  
   final DateTimeRange? pickedDateRange = await showDateRangePicker(
     context: context,
     firstDate: firstDate,
-    lastDate: lastDate.isAfter(today) ? today : lastDate,
+    lastDate: lastDate.isAfter(DateTime.now()) ? DateTime.now() : lastDate,
     initialDateRange: DateTimeRange(
-      start: startDate ?? today,
-      end: endDate ?? today,
+      start: startDate ?? lastDate, 
+      end: endDate ?? lastDate, 
     ),
     builder: (BuildContext context, Widget? child) {
       return Theme(
@@ -181,7 +179,6 @@ class _StockPageState extends State<StockPage> {
   }
 }
 
-
   String formatDateTime(String dateTimeString) {
     DateTime dateTime = DateTime.parse(dateTimeString).toLocal();
     String formattedDate = DateFormat('dd-MM-yyyy').format(dateTime); 
@@ -201,17 +198,7 @@ class _StockPageState extends State<StockPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('History Restock'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.info),
-            onPressed: () async {
-              final prefs = await SharedPreferences.getInstance();
-              final token = prefs.getString('token');
-              debugPrint('Token: $token');
-            },
-          ),
-        ],
+        title: const Text('History Restock')
       ),
       body: SafeArea(
         child: Padding(
@@ -392,32 +379,22 @@ class _StockPageState extends State<StockPage> {
   }
 
   void _showSuccessPopup(String message) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
-        content: Text(
-          message,
-          textAlign: TextAlign.center, 
-          style: const TextStyle(
-            fontWeight: FontWeight.bold, 
-            fontSize: 17.0, 
-          ),
-        ),
-        actions: <Widget>[
-          Center( 
-            child: TextButton(
-              child: const Text('Tutup'),
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Icon(Icons.check_circle, color: Colors.green, size: 60),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              child: Text('Tutup'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+          ],
+        );
+      },
+    );
+  }
 }
