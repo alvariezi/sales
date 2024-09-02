@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:sales/screens/ForgotPassword.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sales/screens/Dashboard.dart';
@@ -253,6 +254,7 @@ class _LoginPageState extends State<LoginPage> {
                               },
                             ),
                             const SizedBox(height: 20),
+                            // Bagian di dalam Form yang menampilkan input password
                             Text(
                               'Password',
                               style: TextStyle(fontSize: 16, color: Colors.black.withOpacity(0.7)),
@@ -289,6 +291,25 @@ class _LoginPageState extends State<LoginPage> {
                                 return null;
                               },
                             ),
+                                const SizedBox(height: 8), 
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Lupa Password?',
+                                        style: TextStyle(color: Colors.blue),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
                             const SizedBox(height: 20),
                             SizedBox(
                               width: double.infinity,
